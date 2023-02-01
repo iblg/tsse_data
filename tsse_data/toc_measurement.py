@@ -92,20 +92,20 @@ def import_toc_measurement():
     return
 
 
-def main():
-    """
-
-    """
-    d = ['sample', 'phase', 'date', 'temperature']
-    # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
-
-    fp = './toc_spreadsheet_1.xlsx'
-    nc = 7
-    mw = 101.19
-    x = process_raw_toc_spreadsheet(fp, nc, mw)
-    print(x)
-
-    return
-
-if __name__ == '__main__':
-    main()
+# def main():
+#     """
+#
+#     """
+#     d = ['sample', 'phase', 'date', 'temperature']
+#     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
+#
+#     fp = './toc_spreadsheet_1.xlsx'
+#     nc = 7
+#     mw = 101.19
+#     x = process_raw_toc_spreadsheet(fp, nc, mw)
+#     print(x)
+#
+#     return
+#
+# if __name__ == '__main__':
+#     main()
