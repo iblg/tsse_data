@@ -47,40 +47,40 @@ def adjust_for_dilution(df):
     df['dTOC'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
     return df
 
-def convert_toc_w_amine(df, nc, mw):
-    """
-    df : pandas.DataFrame
-    The DataFrame containing the TOC data you are processing.
-    nc : int
-    The number of carbon atoms your amine molecule contains.
-    mw : float
-    The molecular weight of your amine molecule.
-    """
+# def convert_toc_w_amine(df, nc, mw):
+#     """
+#     df : pandas.DataFrame
+#     The DataFrame containing the TOC data you are processing.
+#     nc : int
+#     The number of carbon atoms your amine molecule contains.
+#     mw : float
+#     The molecular weight of your amine molecule.
+#     """
+#
+#     if isinstance(nc, int):
+#         pass
+#     elif isinstance(nc, float):
+#         nc = int(nc)
+#         print('nc was passed as a float. Forcing to typecast as int.')
+#     else:
+#         print('nc was not an int. Please provide an integer nc to convert_toc_w_amine.')
+#
+#     if isinstance(mw, float):
+#         pass
+#     elif isinstance(nc, int):
+#         pass
+#     else:
+#         print('mw was not a float. Please provide a float mw to convert_toc_w_amine.')
+#
+#
+#     df['w_a'] = df['TOC'] * 10**(-9) * mw / (nc * 12.011)
+#     df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
+#     return df
 
-    if isinstance(nc, int):
-        pass
-    elif isinstance(nc, float):
-        nc = int(nc)
-        print('nc was passed as a float. Forcing to typecast as int.')
-    else:
-        print('nc was not an int. Please provide an integer nc to convert_toc_w_amine.')
-
-    if isinstance(mw, float):
-        pass
-    elif isinstance(nc, int):
-        pass
-    else:
-        print('mw was not a float. Please provide a float mw to convert_toc_w_amine.')
-
-
-    df['w_a'] = df['TOC'] * 10**(-9) * mw / (nc * 12.011)
-    df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
-    return df
-
-def process_raw_toc_spreadsheet(filepath, nc, mw):
+def process_toc_spreadsheet(filepath):
     df = read_toc_spreadsheet(filepath)
     df = adjust_for_dilution(df)
-    df = convert_toc_w_amine(df, nc, mw)
+    # df = convert_toc_w_amine(df, nc, mw)
     return df
 
 def import_toc_measurement():
