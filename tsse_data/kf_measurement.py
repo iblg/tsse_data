@@ -16,6 +16,7 @@ def create_kf_spreadsheet(filepath, dims):
     """
     cols = dims
 
+    
     std_cols = ['wt_percent_water','m_sample', 'EP1', 'titer']
     [cols.append(col_name) for col_name in std_cols]
 
