@@ -26,7 +26,7 @@ def create_toc_spreadsheet(filepath, dims, tic = False, spot = False):
         tic_cols = ['TIC1', 'TIC2', 'TIC', 'dTIC']
         [cols.append(col_name) for col_name in tic_cols]
 
-    toc_sheet = pd.DataFrame(columns = dims)
+    toc_sheet = pd.DataFrame(columns = cols)
     toc_sheet.to_excel(filepath, index = False)
     return
 

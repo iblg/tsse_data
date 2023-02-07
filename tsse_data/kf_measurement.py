@@ -16,13 +16,13 @@ def create_kf_spreadsheet(filepath, dims):
     """
     cols = dims
 
-    
+
     std_cols = ['wt_percent_water','m_sample', 'EP1', 'titer']
     [cols.append(col_name) for col_name in std_cols]
 
-    df = pd.DataFrame(columns = dims)
+    df = pd.DataFrame(columns = cols)
     df.to_excel(filepath, index = False)
-    return
+    return df
 
 def read_kf_spreadsheet(filepath):
     return pd.read_excel(filepath)
