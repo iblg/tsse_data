@@ -6,7 +6,10 @@ def create_toc_spreadsheet(filepath, dims, tic = False, spot = False):
     The filepath to the TOC spreadsheet you wish to create.
 
     dims : list or array
-    The list of column names that you wish to pass. These should be the same as the dims of your overall experiment.
+    The list of column names that you wish to use as dims. These should be the same as the dims of your overall experiment.
+
+    common_dims : dict, default None.
+    additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
 
     tic : bool, default False.
     If true, does put in columns for recording total inorganic carbon. If false, omits these columns.
@@ -77,37 +80,70 @@ def adjust_for_dilution(df):
 #     df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
 #     return df
 
-def process_toc_spreadsheet(filepath, dims):
+def process_toc_spreadsheet(filepath, dims, common_dims = None):
+    """
+    filepath : str
+    The filepath to the TOC spreadsheet you wish to create.
+
+    dims : list or array
+    The list of column names that you wish to use as dims. These should be the same as the dims of your overall experiment.
+
+    common_dims : dict, default None.
+    additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
+    """
     df = read_toc_spreadsheet(filepath)
-    df = df.set_index(dims)
+
+    if isinstance(filepath, str):
+        pass
+    else:
+        print('\n \n \nfilepath was passed but was format {}'.format(type(filepath)))
+        print('filepath must be a string. \n \n \n ')
+
+    if isinstance(dims, list):
+        pass
+    else:
+        print('\n \n \ndims was passed but was format {}'.format(type(dims)))
+        print('dims must be a list of strings. \n \n \n ')
+
+    if isinstance(common_dims, dict):
+        pass
+    else:
+        print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
+        print('common_dims must be a dict. \n \n \n ')
+
+
+
+    for key, val in common_dims.items(): #write one column per common_dim
+        df[key] = val
+
+    idx = dims
+    [idx.append(d) for d in common_dims]
+    df = df.set_index(idx)
     df = adjust_for_dilution(df)
     ds = df.to_xarray()
+
+    for i in idx:
+        ds = ds.drop_duplicates(dim = i)
     # df = convert_toc_w_amine(df, nc, mw)
     return ds
 
-def import_toc_measurement():
-    """
 
-    """
+
+def main():
+    # """
+    #
+    # """
+    # d = ['sample', 'phase', 'date', 'temperature']
+    # addl_d = {'amine':'dipa', 'salt':'nacl'}
+    # # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
+    #
+    # fp = './toc_spreadsheet_1.xlsx'
+    # ds = process_toc_spreadsheet(fp, d, common_dims = addl_d)
+    # print(ds)
+
+    # print(x)
     pass
+    # return
 
-    return
-
-
-# def main():
-#     """
-#
-#     """
-#     d = ['sample', 'phase', 'date', 'temperature']
-#     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
-#
-#     fp = './toc_spreadsheet_1.xlsx'
-#     nc = 7
-#     mw = 101.19
-#     x = process_raw_toc_spreadsheet(fp, nc, mw)
-#     print(x)
-#
-#     return
-#
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
