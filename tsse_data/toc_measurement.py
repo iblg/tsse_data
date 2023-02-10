@@ -77,11 +77,13 @@ def adjust_for_dilution(df):
 #     df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
 #     return df
 
-def process_toc_spreadsheet(filepath):
+def process_toc_spreadsheet(filepath, dims):
     df = read_toc_spreadsheet(filepath)
+    df = df.set_index(dims)
     df = adjust_for_dilution(df)
+    ds = df.to_xarray()
     # df = convert_toc_w_amine(df, nc, mw)
-    return df
+    return ds
 
 def import_toc_measurement():
     """
