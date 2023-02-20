@@ -48,7 +48,6 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
 
     if isinstance(dims, list):
         idx = dims
-
         pass
     else:
         print('\n \n \ndims was passed but was format {}'.format(type(dims)))
@@ -60,7 +59,6 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
         for key, val in common_dims.items():  # write one column per common_dim
             df[key] = val
         [idx.append(d) for d in common_dims]
-
     else:
         print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
         print('common_dims must be a dict. \n \n \n ')
@@ -70,15 +68,20 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
 
     for i in idx:
         ds = ds.drop_duplicates(dim = i)
-    # df = convert_toc_w_amine(df, nc, mw)
 
     return ds
 
 
 def main():
-    dims = ['amine', 'sample', 'phase']
-    fp = './kf_sheet.xlsx'
-    create_kf_spreadsheet(fp, dims)
+    # dims = ['amine', 'sample', 'phase']
+    # fp = './kf_sheet.xlsx'
+    # create_kf_spreadsheet(fp, dims)
+    fp = '/Users/ianbillinge/Documents/yiplab/projects/new_saxs/phase_diagram/pd_kf.xlsx'
+    df = read_kf_spreadsheet(fp)
+    print(df)
+    dims = ['amine', 'temperature', 'sample', 'replicate']
+    ds = process_kf_spreadsheet(fp, dims, common_dims = {'phase':'org'})
+    print(ds)
 
     return
 
