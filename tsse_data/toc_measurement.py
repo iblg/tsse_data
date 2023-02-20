@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def create_toc_spreadsheet(filepath, dims, tic = False, spot = False):
     """
@@ -46,9 +47,22 @@ def adjust_for_dilution(df):
     df : pandas.DataFrame
     The DataFrame containing the TOC data you are processing.
     """
-    df['TOC'] = df['TOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
-    df['dTOC'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
+    df['TOC_unavg'] = df['TOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
+    df['dTOC_unavg'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
     return df
+
+def get_mean_toc(ds):
+    """
+    ds : xarray.Dataset
+    ds is the TOC dataset under processing in process_toc_spreadsheet.
+
+    This performs an unweighted mean and standard of the TOC over replicates. note: replicates here mean the different vials stuck
+    into the TOC machine. Future versions of this may include the option to do a weighted average of multiple TOC machine
+    readouts to take into account the fact that the TOC machine itself reports uncertainty.
+    """
+    ds['toc'] = ds['TOC_unavg'].mean(dim = 'replicate')
+    ds['dtoc'] = ds['TOC_unavg'].std(dim = 'replicate')/np.sqrt(2)
+    return ds
 
 # def convert_toc_w_amine(df, nc, mw):
 #     """
@@ -124,7 +138,9 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
 
     df = df.set_index(idx)
     df = adjust_for_dilution(df)
+
     ds = df.to_xarray()
+    ds = get_mean_toc(ds)
 
     for i in idx:
         ds = ds.drop_duplicates(dim = i)
@@ -137,17 +153,19 @@ def main():
     # """
     #
     # """
-    # d = ['sample', 'phase', 'date', 'temperature']
-    # addl_d = {'amine':'dipa', 'salt':'nacl'}
-    # # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
+    d = ['sample', 'phase', 'temperature', 'replicate']
+    addl_d = {'amine':'dipa', 'salt':'nacl'}
+    # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
     #
-    # fp = './toc_spreadsheet_1.xlsx'
-    # ds = process_toc_spreadsheet(fp, d, common_dims = addl_d)
+    fp = './toc_spreadsheet_1.xlsx'
+    ds = process_toc_spreadsheet(fp, d, common_dims = addl_d)
+    print(ds)
+    # ds = get_mean_toc(ds)
     # print(ds)
-
+    #
     # print(x)
-    pass
-    # return
+    # pass
+    return
 
 if __name__ == '__main__':
     main()
