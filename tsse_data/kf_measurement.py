@@ -38,7 +38,7 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
     common_dims : dict, default None.
     additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
     """
-    df = read_toc_spreadsheet(filepath)
+    df = read_kf_spreadsheet(filepath)
 
     if isinstance(filepath, str):
         pass
