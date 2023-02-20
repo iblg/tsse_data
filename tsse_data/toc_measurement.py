@@ -105,7 +105,7 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
         print('\n \n \ndims was passed but was format {}'.format(type(dims)))
         print('dims must be a list of strings. \n \n \n ')
 
-    if isinstance(common_dims, None):
+    if isinstance(common_dims, NoneType):
         pass
     elif isinstance(common_dims, dict):
         pass
