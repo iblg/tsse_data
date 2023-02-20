@@ -100,6 +100,8 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
         print('filepath must be a string. \n \n \n ')
 
     if isinstance(dims, list):
+        idx = dims
+
         pass
     else:
         print('\n \n \ndims was passed but was format {}'.format(type(dims)))
@@ -110,6 +112,8 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
     elif isinstance(common_dims, dict):
         for key, val in common_dims.items():  # write one column per common_dim
             df[key] = val
+        [idx.append(d) for d in common_dims]
+
     else:
         print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
         print('common_dims must be a dict. \n \n \n ')
@@ -118,8 +122,6 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
 
 
 
-    idx = dims
-    [idx.append(d) for d in common_dims]
     df = df.set_index(idx)
     df = adjust_for_dilution(df)
     ds = df.to_xarray()
