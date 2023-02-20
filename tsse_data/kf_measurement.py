@@ -66,7 +66,6 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
         print('common_dims must be a dict. \n \n \n ')
 
     df = df.set_index(idx)
-    df = adjust_for_dilution(df)
     ds = df.to_xarray()
 
     for i in idx:
