@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from tsse_data.check_spreadsheet import check_spreadsheet
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
     """
@@ -46,28 +46,7 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
     if print_raw_data:
         print(df)
 
-    if isinstance(filepath, str):
-        pass
-    else:
-        print('\n \n \nfilepath was passed but was format {}'.format(type(filepath)))
-        print('filepath must be a string. \n \n \n ')
-
-    if isinstance(dims, list):
-        idx = dims
-        pass
-    else:
-        print('\n \n \ndims was passed but was format {}'.format(type(dims)))
-        print('dims must be a list of strings. \n \n \n ')
-
-    if common_dims is None:
-        pass
-    elif isinstance(common_dims, dict):
-        for key, val in common_dims.items():  # write one column per common_dim
-            df[key] = val
-        [idx.append(d) for d in common_dims]
-    else:
-        print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
-        print('common_dims must be a dict. \n \n \n ')
+    idx = check_spreadsheet(df, filepath, dims, common_dims)
 
     df = df.set_index(idx)
 

@@ -1,7 +1,9 @@
 import pandas as pd
 import numpy as np
+from tsse_data.check_spreadsheet import check_spreadsheet
 
-def create_toc_spreadsheet(filepath, dims, tic = False, spot = False):
+
+def create_toc_spreadsheet(filepath, dims, tic=False, spot=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -25,14 +27,14 @@ def create_toc_spreadsheet(filepath, dims, tic = False, spot = False):
     std_cols = ['m_sample', 'm_water', 'TOC1_raw', 'TOC2_raw', 'TOC_raw', 'dTOC_raw']
     [cols.append(col_name) for col_name in std_cols]
 
-
     if tic == True:
         tic_cols = ['TIC1', 'TIC2', 'TIC', 'dTIC']
         [cols.append(col_name) for col_name in tic_cols]
 
-    toc_sheet = pd.DataFrame(columns = cols)
-    toc_sheet.to_excel(filepath, index = False)
+    toc_sheet = pd.DataFrame(columns=cols)
+    toc_sheet.to_excel(filepath, index=False)
     return
+
 
 def read_toc_spreadsheet(filepath):
     """
@@ -42,14 +44,16 @@ def read_toc_spreadsheet(filepath):
     df = pd.read_excel(filepath)
     return df
 
+
 def adjust_for_dilution(df):
     """
     df : pandas.DataFrame
     The DataFrame containing the TOC data you are processing.
     """
-    df['TOC_unavg'] = df['TOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
-    df['dTOC_unavg'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample'])/df['m_sample']
+    df['TOC_unavg'] = df['TOC_raw'] * (df['m_water'] + df['m_sample']) / df['m_sample']
+    df['dTOC_unavg'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample']) / df['m_sample']
     return df
+
 
 def get_mean_toc(ds):
     """
@@ -60,9 +64,10 @@ def get_mean_toc(ds):
     into the TOC machine. Future versions of this may include the option to do a weighted average of multiple TOC machine
     readouts to take into account the fact that the TOC machine itself reports uncertainty.
     """
-    ds['toc'] = ds['TOC_unavg'].mean(dim = 'replicate')
-    ds['dtoc'] = ds['TOC_unavg'].std(dim = 'replicate')/np.sqrt(2)
+    ds['toc'] = ds['TOC_unavg'].mean(dim='replicate')
+    ds['dtoc'] = ds['TOC_unavg'].std(dim='replicate') / np.sqrt(2)
     return ds
+
 
 # def convert_toc_w_amine(df, nc, mw):
 #     """
@@ -94,7 +99,8 @@ def get_mean_toc(ds):
 #     df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
 #     return df
 
-def process_toc_spreadsheet(filepath, dims, common_dims = None):
+
+def process_toc_spreadsheet(filepath, dims, common_dims=None):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -107,34 +113,7 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
     """
     df = read_toc_spreadsheet(filepath)
 
-    if isinstance(filepath, str):
-        pass
-    else:
-        print('\n \n \nfilepath was passed but was format {}'.format(type(filepath)))
-        print('filepath must be a string. \n \n \n ')
-
-    if isinstance(dims, list):
-        idx = dims
-
-        pass
-    else:
-        print('\n \n \ndims was passed but was format {}'.format(type(dims)))
-        print('dims must be a list of strings. \n \n \n ')
-
-    if common_dims is None:
-        pass
-    elif isinstance(common_dims, dict):
-        for key, val in common_dims.items():  # write one column per common_dim
-            df[key] = val
-        [idx.append(d) for d in common_dims]
-
-    else:
-        print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
-        print('common_dims must be a dict. \n \n \n ')
-
-
-
-
+    idx = check_spreadsheet(df, filepath, dims, common_dims)
 
     df = df.set_index(idx)
     df = adjust_for_dilution(df)
@@ -143,10 +122,9 @@ def process_toc_spreadsheet(filepath, dims, common_dims = None):
     ds = get_mean_toc(ds)
 
     for i in idx:
-        ds = ds.drop_duplicates(dim = i)
+        ds = ds.drop_duplicates(dim=i)
     # df = convert_toc_w_amine(df, nc, mw)
     return ds
-
 
 
 def main():
@@ -154,11 +132,11 @@ def main():
     #
     # """
     d = ['sample', 'phase', 'temperature', 'replicate']
-    addl_d = {'amine':'dipa', 'salt':'nacl'}
+    addl_d = {'amine': 'dipa', 'salt': 'nacl'}
     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
     #
     fp = './toc_spreadsheet_1.xlsx'
-    ds = process_toc_spreadsheet(fp, d, common_dims = addl_d)
+    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d)
     print(ds)
     # ds = get_mean_toc(ds)
     # print(ds)
@@ -166,6 +144,7 @@ def main():
     # print(x)
     # pass
     return
+
 
 if __name__ == '__main__':
     main()
