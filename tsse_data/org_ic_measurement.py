@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 
-def create_org_ic_spreadsheet(filepath, dims, ions, spot = False, dish_label = False, second_dil = False):
+
+def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -17,15 +19,15 @@ def create_org_ic_spreadsheet(filepath, dims, ions, spot = False, dish_label = F
     second_dil :
     """
     cols = dims
-    if spot == True:
+    if spot:
         cols.append('spot')
 
-    if dish_label == True:
+    if dish_label:
         cols.append('dish_label')
 
-    std_cols = ['m_dish', 'm_with_water', 'm_with_salt', 'm_with_DI water']
+    std_cols = ['m_dish', 'm_with_sample', 'm_with_salt', 'm_with_DI water']
 
-    if second_dil == True:
+    if second_dil:
         cols.append('m_sol_to_ic')
         cols.append('m_DI_to_IC')
 
@@ -37,15 +39,67 @@ def create_org_ic_spreadsheet(filepath, dims, ions, spot = False, dish_label = F
     df.to_excel(filepath, index=False)
     return
 
+
+def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False):
+    df = pd.read_excel(filepath)
+
+    if print_raw_data:
+        print(df)
+
+    if isinstance(filepath, str):
+        pass
+    else:
+        print('\n \n \nfilepath was passed but was format {}'.format(type(filepath)))
+        print('filepath must be a string. \n \n \n ')
+
+    if isinstance(dims, list):
+        idx = dims
+        pass
+    else:
+        print('\n \n \ndims was passed but was format {}'.format(type(dims)))
+        print('dims must be a list of strings. \n \n \n ')
+
+    if common_dims is None:
+        pass
+    elif isinstance(common_dims, dict):
+        for key, val in common_dims.items():  # write one column per common_dim
+            df[key] = val
+        [idx.append(d) for d in common_dims]
+    else:
+        print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
+        print('common_dims must be a dict. \n \n \n ')
+
+    df = df.set_index(idx)
+
+    ds = df.to_xarray()
+    ds['m_sample'] = ds['m_with_sample'] - ds['m_dish']
+    ds['m_salt'] = ds['m_with_salt'] - ds['m_dish']
+    ds['m_solution'] = ds['m_with_DI water'] - ds['m_dish']
+
+    for i, func in ions.items():
+        k = 'A_' + i
+        ds['log_' + k] = np.log10(ds[k])
+        ds['log_w_' + i] = func(ds['log_' + k])
+        ds['w_' + i + '_to_ic'] = 10 ** (ds['log_w_' + i])
+        ds['w_' + i + '_rep'] = ds['w_' + i + '_to_ic'] * (ds['m_solution'] / ds['m_sample'])
+
+        ds['w_' + i] = ds['w_' + i + '_rep'].mean(dim='replicate')
+        ds['dw_' + i] = ds['w_' + i + '_rep'].std(dim='replicate')/np.sqrt(2)
+
+
+    return ds
+
+
 def main():
     fp = './org_ic_spread.xlsx'
 
     dims = ['amine', 'temperature', 'ion', 'phase', 'replicate']
     ions = ['cl']
 
-    create_org_ic_spreadsheet(fp, dims, ions, spot = True, dish_label = True, second_dil = True)
+    create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
 
     return
+
 
 if __name__ == '__main__':
     main()

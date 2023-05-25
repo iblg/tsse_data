@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+
 def create_kf_spreadsheet(filepath, dims):
     """
     filepath : str
@@ -17,29 +18,23 @@ def create_kf_spreadsheet(filepath, dims):
     """
     cols = dims
 
-    std_cols = ['wt_percent_water','m_sample', 'EP1', 'titer']
+    std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
     [cols.append(col_name) for col_name in std_cols]
 
-    df = pd.DataFrame(columns = cols)
-    df.to_excel(filepath, index = False)
+    df = pd.DataFrame(columns=cols)
+    df.to_excel(filepath, index=False)
     return df
+
 
 def read_kf_spreadsheet(filepath):
     return pd.read_excel(filepath)
 
-def process_kf_spreadsheet(filepath, dims, common_dims = None):
-    """
-    filepath : str
-    The filepath to the KF spreadsheet you wish to create.
 
-    dims : list or array
-    The list of column names that you wish to use as dims. These should be the same as the dims of your overall experiment.
+def process_kf_spreadsheet(filepath, dims, common_dims=None, print_raw_df=False):
 
-    common_dims : dict, default None.
-    additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
-    """
     df = read_kf_spreadsheet(filepath)
-
+    if print_raw_df:
+        print(df)
     if isinstance(filepath, str):
         pass
     else:
@@ -68,9 +63,10 @@ def process_kf_spreadsheet(filepath, dims, common_dims = None):
     ds = find_ww(ds)
 
     for i in idx:
-        ds = ds.drop_duplicates(dim = i)
+        ds = ds.drop_duplicates(dim=i)
 
     return ds
+
 
 def find_ww(ds):
     """
@@ -78,24 +74,26 @@ def find_ww(ds):
 
     This function should put out
     """
-    x = ds['wt_percent_water']/100.
+    x = ds['wt_percent_water'] / 100.
 
-    ds['w_w'] = x.mean(dim = 'replicate')
-    ds['dw_w'] = x.std(dim = 'replicate')/np.sqrt(2)
+    ds['w_w'] = x.mean(dim='replicate')
+    ds['dw_w'] = x.std(dim='replicate') / np.sqrt(2)
 
     return ds
 
+
 def main():
-    # dims = ['amine', 'sample', 'phase']
-    # fp = './kf_sheet.xlsx'
-    # create_kf_spreadsheet(fp, dims)
-    fp = '/Users/ianbillinge/Documents/yiplab/projects/new_saxs/phase_diagram/pd_kf.xlsx'
-    df = read_kf_spreadsheet(fp)
-    dims = ['amine', 'temperature', 'sample', 'replicate']
-    ds = process_kf_spreadsheet(fp, dims, common_dims = {'phase':'org'})
-    print(ds)
+    dims = ['amine', 'sample', 'phase']
+    fp = './kf_sheet.xlsx'
+    create_kf_spreadsheet(fp, dims)
+    # fp = '/Users/ianbillinge/Documents/yiplab/projects/new_saxs/phase_diagram/pd_kf.xlsx'
+    # df = read_kf_spreadsheet(fp)
+    # dims = ['amine', 'temperature', 'sample', 'replicate']
+    # ds = process_kf_spreadsheet(fp, dims, common_dims={'phase': 'org'})
+    # print(ds)
 
     return
+
 
 if __name__ == '__main__':
     main()
