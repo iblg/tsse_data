@@ -50,10 +50,37 @@ def adjust_for_dilution(df):
     df : pandas.DataFrame
     The DataFrame containing the TOC data you are processing.
     """
-    df['TOC_unavg'] = df['TOC_raw'] * (df['m_water'] + df['m_sample']) / df['m_sample']
-    df['dTOC_unavg'] = df['dTOC_raw'] * (df['m_water'] + df['m_sample']) / df['m_sample']
+    df['w_toc_adj_dil'] = df['w_toc_to_ic'] * (1 + df['m_water'] / df['m_sample'])
+
     return df
 
+
+def adjust_for_calibration(df, calib_curves):
+    df['w_toc_to_ic'] = np.zeros(df.shape[0])
+    for i in range(df.shape[0]):
+        for j in calib_curves:
+            if j[0] < df['TOC_raw'].iloc[i] < j[1]:
+                func = j[2]
+
+        df['w_toc_to_ic'].iloc[i] = func(df['w_toc_raw'].iloc[i])
+
+    return df
+
+
+def low_calib(toc):
+    log_toc_meas = np.log10(toc)
+    log_toc_actual = log_toc_meas * 1.1019 + 0.12
+    print(log_toc_actual)
+
+    toc_actual = 10**log_toc_actual
+    return toc_actual
+
+
+def high_calib(toc):
+    log_toc_meas = np.log10(toc)
+    log_toc_actual = log_toc_meas * 0.88 - 0.55
+    toc_actual = 10**log_toc_actual
+    return toc_actual
 
 def get_mean_toc(ds):
     """
@@ -64,9 +91,12 @@ def get_mean_toc(ds):
     into the TOC machine. Future versions of this may include the option to do a weighted average of multiple TOC machine
     readouts to take into account the fact that the TOC machine itself reports uncertainty.
     """
-    ds['toc'] = ds['TOC_unavg'].mean(dim='replicate')
-    ds['dtoc'] = ds['TOC_unavg'].std(dim='replicate') / np.sqrt(2)
+    ds['w_toc'] = ds['w_toc_adj_dil'].mean(dim='replicate')
+    ds['dw_toc'] = ds['w_toc_adj_dil'].std(dim='replicate') / np.sqrt(2)
+
     return ds
+
+
 
 
 # def convert_toc_w_amine(df, nc, mw):
@@ -100,7 +130,7 @@ def get_mean_toc(ds):
 #     return df
 
 
-def process_toc_spreadsheet(filepath, dims, common_dims=None):
+def process_toc_spreadsheet(filepath, dims, common_dims=None, calib_curves=None):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -112,10 +142,14 @@ def process_toc_spreadsheet(filepath, dims, common_dims=None):
     additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
     """
     df = read_toc_spreadsheet(filepath)
+    df['w_toc_raw'] = df['TOC_raw'] / 10**9
+    df['dw_toc_raw'] = df['dTOC_raw'] / 10**9
 
     idx = check_spreadsheet(df, filepath, dims, common_dims)
-
     df = df.set_index(idx)
+
+    df = adjust_for_calibration(df, calib_curves)
+
     df = adjust_for_dilution(df)
 
     ds = df.to_xarray()
@@ -136,7 +170,13 @@ def main():
     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
     #
     fp = './toc_spreadsheet_1.xlsx'
-    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d)
+    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d, calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
+    ds['w_dipa'] = ds['w_toc'] * 101.19/(6*12.011)
+    ds['dw_dipa'] = ds['dw_toc'] * 101.19/(6*12.011)
+
+
+    ds = ds.sel({'amine': 'dipa', 'temperature': 25, 'phase': 'o', 'salt': 'nacl'})
+    ds = ds.sel({'sample': '3a'})
     print(ds)
     # ds = get_mean_toc(ds)
     # print(ds)
