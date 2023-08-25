@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def na_calib(a):
     # filter: perform any filtering needed to determine which calibration function is best
     # to be implemented
