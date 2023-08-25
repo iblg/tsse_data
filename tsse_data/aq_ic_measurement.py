@@ -54,54 +54,39 @@ def process_aq_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_
 
     df = df.set_index(idx)
 
-    ds = df.to_xarray()
-
     # ds['m_sample'] = ds['m_with_sample'] - ds['m_dish']
     # ds['m_salt'] = ds['m_with_salt'] - ds['m_dish']
-    # ds['m_solution'] = ds['m_with_DI water'] - ds['m_dish']
+    df['m_solution'] = df['m_sample'] + df['m_DI']
     #
-    # for i, func in ions.items():
-    #     k = 'A_' + i
-    #     ds['log_' + k] = np.log10(ds[k])
-    #     ds['log_w_' + i] = func(ds['log_' + k])
-    #     ds['w_' + i + '_to_ic'] = 10 ** (ds['log_w_' + i])
-    #     ds['w_' + i + '_rep'] = ds['w_' + i + '_to_ic'] * (ds['m_solution'] / ds['m_sample'])
-    #
-    #     ds['w_' + i] = ds['w_' + i + '_rep'].mean(dim='replicate')
-    #     ds['dw_' + i] = ds['w_' + i + '_rep'].std(dim='replicate')/np.sqrt(2)
+    for ion, calibration in ions.items():
+        df['w_' + ion + '_to_ic'] = calibration(df['A_' + ion])
+        df['w_' + ion + '_rep'] = df['w_' + ion + '_to_ic'] * (df['m_solution'] / df['m_sample'])
+
+    ds = df.to_xarray()
+
+    for ion, calibration in ions.items():
+        ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
+        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(2)
 
     return ds
-
-
-def adjust_for_calibration(df, ions):
-    for i, t in ions.items():
-        df['w_' + i + '_to_ic'] = np.zeros(df.shape[0])
-
-        df.loc[:, 'w_' + i + '_to_ic'] = t(df.loc[:, 'A_' + i])  # This currently applies the same fxn to all rows
-        # any row-by-row treatment must be done in the calibration function.
-
-    return df
-
-
-def adjust_for_dilution(df, ions):
-    for i, t in ions.items():
-        df['w_' + i + '_replicate'] = df['w_' + i + '_to_ic'] * (1 + df['m_DI'] / df['m_sample'])
-    return df
 
 
 def main():
     dims = ['sample', 'replicate']
     addl_d = {'amine': 'dipa', 'cation': 'Na', 'anion': 'Cl'}
-    ions = {'Na': na_calib, 'Cl': cl_calib}
+    ions = {'Na': na_calib,
+            # 'Cl': cl_calib
+            }
     fp = './aq_ic_sheet.xlsx'
     # create_aq_ic_spreadsheet(fp, dims, ions)
-    df = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d)
-    df = adjust_for_calibration(df, ions)
-    df = adjust_for_dilution(df, ions)
-    df = adjust_for_molecular_weight(df, {'Cl': (35.45, 58.44, 'NaCl')})
-    ds = df_to_ds(df)
+    ds = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d)
+    ds2 = ds.sel({'amine': 'dipa', 'cation': 'Na', 'anion': 'Cl'})
+    print(ds2['w_Na'])
+    ds = adjust_for_molecular_weight(ds, {'Na': (22.99, 58.44, 'NaCl')})
+    print(ds['w_NaCl'])
+    # ds = df_to_ds(df)
 
-    print(ds['w_NaCl_replicate'])
+    # print(ds['w_NaCl_replicate'])
 
     return
 

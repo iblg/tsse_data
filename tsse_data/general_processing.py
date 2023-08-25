@@ -1,15 +1,26 @@
-def adjust_for_molecular_weight(df, ion_tuple):
+import numpy as np
+import xarray
+
+
+def adjust_for_molecular_weight(ds: xarray.Dataset,
+                                ion_tuple: dict):
     """
+    ds: xarray.Dataset
+    The dataset containing data that you wish to adjust for molecular weight.
+
     ion_tuple: dict
-    Key is ion name.
+    A dictionary containing information about the salt and its component ions.
+
+    Key: is ion name. e.g. 'Na' or 'CO3'.
     val[0] is total weight of ions of this species in formula unit, g/mol formula unit.
-    val[1] is weight of formula unit, g/mol.
+    e.g, for Na in NaCl, val[0] = 22.999. For Na in Na2CO3, val[0] = 45.998
+    val[1] is weight of formula unit of the salt, in g/mol.
     val[2] is name of overall salt.
     """
-    for key, val in ion_tuple.items():
-        df['w_' + val[2] + '_replicate'] = df['w_' + key + '_replicate'] * val[1] / val[0]
-
-    return df
+    for ion, val in ion_tuple.items():
+        salt = val[2]
+        ds['w_' + salt] = ds['w_' + ion] * val[1] / val[0]
+    return ds
 
 
 def df_to_ds(df):
