@@ -5,7 +5,7 @@ from tsse_data.calibs import na_calib, cl_calib
 from tsse_data.general_processing import adjust_for_molecular_weight, df_to_ds, check_willingness
 
 
-def create_aq_ic_spreadsheet(filepath, dims, ions, spot=False):
+def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, second_dilution: bool = False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -35,6 +35,9 @@ def create_aq_ic_spreadsheet(filepath, dims, ions, spot=False):
 
         std_cols = ['m_sample', 'm_DI']
 
+        if second_dilution:
+            std_cols += ['m_first_solution', 'm_DI_2']
+
         [cols.append(col_name) for col_name in std_cols]
 
         [cols.append('A_' + ion) for ion in ions]
@@ -44,7 +47,10 @@ def create_aq_ic_spreadsheet(filepath, dims, ions, spot=False):
     return
 
 
-def process_aq_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False):
+def process_aq_ic_spreadsheet(filepath, dims, ions,
+                              common_dims: list = None,
+                              print_raw_data: bool = False,
+                              second_dilution: bool = False):
     df = pd.read_excel(filepath)
 
     if print_raw_data:
@@ -60,10 +66,26 @@ def process_aq_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_
     #
     for ion, calibration in ions.items():
         df['w_' + ion + '_to_ic'] = calibration(df['A_' + ion])
-        df['w_' + ion + '_rep'] = df['w_' + ion + '_to_ic'] * (df['m_solution'] / df['m_sample'])
+
+        # dilutions
+
+        # first dilution
+        dil1 = df['m_solution'] / df['m_sample']
+
+        # if second dilution
+        if second_dilution:
+            try:
+                dil2 = df['m_DI_2'] / df['m_first_solution']
+            except KeyError:
+                print('Second dilution key not found! The keys must be m_DI_2 and m_first_solution!')
+        else:
+            dil2 = 1.
+
+        df['w_' + ion + '_rep'] = df['w_' + ion + '_to_ic'] * dil1 * dil2
 
     ds = df.to_xarray()
 
+    # average over replicates
     for ion, calibration in ions.items():
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
         ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(2)
