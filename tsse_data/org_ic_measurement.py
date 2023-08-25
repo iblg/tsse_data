@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
+from calibs import na_calib, cl_calib
+from general_processing import adjust_for_molecular_weight
 
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
@@ -44,7 +46,7 @@ def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False
     return
 
 
-def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False, second_dil=False):
+def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False, second_dilution=False):
     df = pd.read_excel(filepath)
 
     if print_raw_data:
@@ -59,43 +61,42 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
     ds['m_salt'] = ds['m_with_salt'] - ds['m_dish']
     ds['m_solution'] = ds['m_with_DI water'] - ds['m_dish']
 
-    for i, func in ions.items():
-        k = 'A_' + i
+    for ion, calibration in ions.items():
 
         # transform to log
-        ds['log_' + k] = np.log10(ds[k])
-        ds['log_w_' + i] = func(ds['log_' + k]) # use the calibration function passed
-        ds['w_' + i + '_to_ic'] = 10 ** (ds['log_w_' + i]) #re-transform from log units to normal
+        # ds['log_' + 'A_' + ion] = np.log10(ds['A_' + ion])
+        ds['w_' + ion + '_to_ic'] = calibration(ds['A_' + ion])
+        # ds['log_w_' + ion] = calibration(ds['log_A_' + ion]) # use the calibration function passed
+        # ds['w_' + ion + '_to_ic'] = 10 ** (ds['log_w_' + ion])  # re-transform from log units to normal
 
-        #dilutions
+        # dilutions
         dil1 = ds['m_solution'] / ds['m_sample']
 
-        if second_dil: #if you did a second dilution:
+        if second_dilution:  # if you did a second dilution:
             dil2 = (ds['m_solution_to_ic'] + ds['m_di_to_ic']) / ds['m_di_to_ic']
         else:
             dil2 = 1
 
-        ds['w_' + i + '_rep'] = ds['w_' + i + '_to_ic'] * dil1 * dil2
+        ds['w_' + ion + '_rep'] = ds['w_' + ion + '_to_ic'] * dil1 * dil2
 
         # average over replicates
-        ds['w_' + i] = ds['w_' + i + '_rep'].mean(dim='replicate')
-        ds['dw_' + i] = ds['w_' + i + '_rep'].std(dim='replicate') / np.sqrt(2)
-    # currently, error arising from fit is not incorporated. However, rest of spreadsheet is working well.
+        ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
+        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(2)
     return ds
 
-def na_calib(x):
-    x = x * 1.0101 - 5.4347
-    return x
 
 def main():
     fp = './org_ic_spread.xlsx'
 
-    dims = ['amine', 'temperature', 'ion', 'phase', 'replicate']
-    ions = {'Na': na_calib}
+    dims = ['sample', 'temperature', 'ion', 'phase', 'replicate']
+    ions = {'Cl': cl_calib}
 
     # create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
     ds = process_org_ic_spreadsheet(fp, dims, ions)
+    ds = ds.sel({'temperature': 25.0}, method='nearest').sel({'phase': 'o', 'ion': 'Na'})
     print(ds)
+    ds = adjust_for_molecular_weight(ds, {'Cl': (35.45, 58.44, 'NaCl')})
+    print(ds['w_NaCl'])
     return
 
 
