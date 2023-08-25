@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
+from tsse_data.general_processing import check_willingness
+
 
 def create_kf_spreadsheet(filepath, dims):
     """
@@ -16,21 +18,19 @@ def create_kf_spreadsheet(filepath, dims):
     spot : bool, default False
     If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
     """
-    cols = dims
+    if check_willingness('create_kf_spreadsheet', filepath):
+        cols = dims
 
-    std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
-    [cols.append(col_name) for col_name in std_cols]
+        std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
+        [cols.append(col_name) for col_name in std_cols]
 
-    df = pd.DataFrame(columns=cols)
-    df.to_excel(filepath, index=False)
-    return df
+        df = pd.DataFrame(columns=cols)
+        df.to_excel(filepath, index=False)
+    return
 
 
 def read_kf_spreadsheet(filepath):
     return pd.read_excel(filepath)
-
-
-
 
 
 def process_kf_spreadsheet(filepath, dims, common_dims=None, print_raw_df=False):

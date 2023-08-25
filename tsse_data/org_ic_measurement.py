@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
+from tsse_data.general_processing import check_willingness
+
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
     """
@@ -18,29 +20,31 @@ def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False
 
     second_dil :
     """
-    cols = dims
-    if spot:
-        cols.append('spot')
+    if check_willingness('create_org_ic_spreadsheet', filepath):
+        cols = dims
+        if spot:
+            cols.append('spot')
 
-    if dish_label:
-        cols.append('dish_label')
+        if dish_label:
+            cols.append('dish_label')
 
-    std_cols = ['m_dish', 'm_with_sample', 'm_with_salt', 'm_with_DI water']
+        std_cols = ['m_dish', 'm_with_sample', 'm_with_salt', 'm_with_DI water']
 
-    if second_dil:
-        cols.append('m_sol_to_ic')
-        cols.append('m_DI_to_IC')
+        if second_dil:
+            cols.append('m_solution_to_ic')
+            cols.append('m_di_to_ic')
 
-    [cols.append(col_name) for col_name in std_cols]
+        [cols.append(col_name) for col_name in std_cols]
 
-    [cols.append('A_' + ion) for ion in ions]
+        [cols.append('A_' + ion) for ion in ions]
 
-    df = pd.DataFrame(columns=dims)
-    df.to_excel(filepath, index=False)
+        df = pd.DataFrame(columns=dims)
+        df.to_excel(filepath, index=False)
+
     return
 
 
-def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False):
+def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False, second_dil=False):
     df = pd.read_excel(filepath)
 
     if print_raw_data:
@@ -57,26 +61,41 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
 
     for i, func in ions.items():
         k = 'A_' + i
+
+        # transform to log
         ds['log_' + k] = np.log10(ds[k])
-        ds['log_w_' + i] = func(ds['log_' + k])
-        ds['w_' + i + '_to_ic'] = 10 ** (ds['log_w_' + i])
-        ds['w_' + i + '_rep'] = ds['w_' + i + '_to_ic'] * (ds['m_solution'] / ds['m_sample'])
+        ds['log_w_' + i] = func(ds['log_' + k]) # use the calibration function passed
+        ds['w_' + i + '_to_ic'] = 10 ** (ds['log_w_' + i]) #re-transform from log units to normal
 
+        #dilutions
+        dil1 = ds['m_solution'] / ds['m_sample']
+
+        if second_dil: #if you did a second dilution:
+            dil2 = (ds['m_solution_to_ic'] + ds['m_di_to_ic']) / ds['m_di_to_ic']
+        else:
+            dil2 = 1
+
+        ds['w_' + i + '_rep'] = ds['w_' + i + '_to_ic'] * dil1 * dil2
+
+        # average over replicates
         ds['w_' + i] = ds['w_' + i + '_rep'].mean(dim='replicate')
-        ds['dw_' + i] = ds['w_' + i + '_rep'].std(dim='replicate')/np.sqrt(2)
-
-
+        ds['dw_' + i] = ds['w_' + i + '_rep'].std(dim='replicate') / np.sqrt(2)
+    # currently, error arising from fit is not incorporated. However, rest of spreadsheet is working well.
     return ds
 
+def na_calib(x):
+    x = x * 1.0101 - 5.4347
+    return x
 
 def main():
     fp = './org_ic_spread.xlsx'
 
     dims = ['amine', 'temperature', 'ion', 'phase', 'replicate']
-    ions = ['cl']
+    ions = {'Na': na_calib}
 
-    create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
-
+    # create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
+    ds = process_org_ic_spreadsheet(fp, dims, ions)
+    print(ds)
     return
 
 

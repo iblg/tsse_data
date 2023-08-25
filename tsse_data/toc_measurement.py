@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
+from tsse_data.general_processing import check_willingness
 
 
-def create_toc_spreadsheet(filepath, dims, tic=False, spot=False):
+def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3po4=False, tic=False, spot=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -20,19 +21,37 @@ def create_toc_spreadsheet(filepath, dims, tic=False, spot=False):
     spot : bool, default False
     If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
     """
-    cols = dims
-    if spot == True:
-        cols.append('spot')
+    if check_willingness('create_toc_spreadsheet', filepath):
+        cols = dims
+        if spot:
+            cols.append('spot')
 
-    std_cols = ['m_sample', 'm_water', 'TOC1_raw', 'TOC2_raw', 'TOC_raw', 'dTOC_raw']
-    [cols.append(col_name) for col_name in std_cols]
+        std_cols = ['m_sample', 'm_water']
 
-    if tic == True:
-        tic_cols = ['TIC1', 'TIC2', 'TIC', 'dTIC']
-        [cols.append(col_name) for col_name in tic_cols]
+        if h3po4:
+            std_cols.append('m_h3po4')
 
-    toc_sheet = pd.DataFrame(columns=cols)
-    toc_sheet.to_excel(filepath, index=False)
+        if reporting == 'mean':
+            std_cols += ['TOC_raw', 'dTOC_raw']
+        elif reporting == 'replicates':
+            repl_list = []
+            [repl_list.append('TOC_{}_raw'.format(r)) for r in range(1, meas_per_vial + 1)]
+            std_cols += repl_list
+        else:
+            print('No valid method of reporting provided to create_toc_spreadsheet().'
+                  'Valid methods are \'mean\' or \'replicates\'.')
+
+        [cols.append(col_name) for col_name in std_cols]
+
+        if tic == True:
+            tic_cols = ['TIC1', 'TIC2', 'TIC', 'dTIC']
+            [cols.append(col_name) for col_name in tic_cols]
+
+
+        toc_sheet = pd.DataFrame(columns=cols)
+
+        toc_sheet.to_excel(filepath, index=False)
+
     return
 
 
@@ -72,15 +91,16 @@ def low_calib(toc):
     log_toc_actual = log_toc_meas * 1.1019 + 0.12
     print(log_toc_actual)
 
-    toc_actual = 10**log_toc_actual
+    toc_actual = 10 ** log_toc_actual
     return toc_actual
 
 
 def high_calib(toc):
     log_toc_meas = np.log10(toc)
     log_toc_actual = log_toc_meas * 0.88 - 0.55
-    toc_actual = 10**log_toc_actual
+    toc_actual = 10 ** log_toc_actual
     return toc_actual
+
 
 def get_mean_toc(ds):
     """
@@ -95,8 +115,6 @@ def get_mean_toc(ds):
     ds['dw_toc'] = ds['w_toc_adj_dil'].std(dim='replicate') / np.sqrt(2)
 
     return ds
-
-
 
 
 # def convert_toc_w_amine(df, nc, mw):
@@ -142,8 +160,8 @@ def process_toc_spreadsheet(filepath, dims, common_dims=None, calib_curves=None)
     additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
     """
     df = read_toc_spreadsheet(filepath)
-    df['w_toc_raw'] = df['TOC_raw'] / 10**9
-    df['dw_toc_raw'] = df['dTOC_raw'] / 10**9
+    df['w_toc_raw'] = df['TOC_raw'] / 10 ** 9
+    df['dw_toc_raw'] = df['dTOC_raw'] / 10 ** 9
 
     idx = check_spreadsheet(df, filepath, dims, common_dims)
     df = df.set_index(idx)
@@ -170,10 +188,10 @@ def main():
     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
     #
     fp = './toc_spreadsheet_1.xlsx'
-    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d, calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
-    ds['w_dipa'] = ds['w_toc'] * 101.19/(6*12.011)
-    ds['dw_dipa'] = ds['dw_toc'] * 101.19/(6*12.011)
-
+    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d,
+                                 calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
+    ds['w_dipa'] = ds['w_toc'] * 101.19 / (6 * 12.011)
+    ds['dw_dipa'] = ds['dw_toc'] * 101.19 / (6 * 12.011)
 
     ds = ds.sel({'amine': 'dipa', 'temperature': 25, 'phase': 'o', 'salt': 'nacl'})
     ds = ds.sel({'sample': '3a'})
