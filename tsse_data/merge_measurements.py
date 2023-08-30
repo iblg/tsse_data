@@ -16,7 +16,7 @@ def merge_phases(org, aq):
         print('Dims of {} are: \n {} \n'.format(aq.name, aq.dims))
         return
 
-    merged = xr.concat(org, aq, dim='phase')
+    merged = xr.concat([org, aq], dim='phase')
     return merged
 
 
@@ -40,9 +40,12 @@ def merge_org_phase(org_ic: xarray.Dataset, kf: xarray.Dataset):
         print('Dims of org_ic are: \n {} \n'.format(org_ic.dims))
         print('Dims of kf are: \n {} \n'.format(kf.dims))
 
-    org = org_ic
-    org['w_w'], org['dw_w'] = kf['w_w'], kf['dw_w']
-    org['w_s'], org['w_s'] = org_ic['w_s'], org_ic['dw_s']
+    org = xr.combine_by_coords([org_ic, kf],
+                              # compat='override' #currently, error message is being thrown on one column.
+                              )
+    # org = org_ic
+    # org['w_w'], org['dw_w'] = kf['w_w'], kf['dw_w']
+    # org['w_s'], org['w_s'] = org_ic['w_s'], org_ic['dw_s']
 
     org['w_a'], org['dw_a'] = find_third_component(x1=org['w_s'], x2=org['w_w'], dx1=org['dw_s'], dx2=org['dw_w'])
 
@@ -57,27 +60,15 @@ def merge_aq_phase(aq_ic, toc):
         print('Dims of aq_ic are: \n {} \n'.format(aq_ic.dims))
         print('Dims of toc are: \n {} \n'.format(toc.dims))
 
-    # aq = xr.Dataset()
-    # aq = xr.align(aq_ic, toc, join='exact')
     aq = xr.combine_by_coords([aq_ic, toc],
                               compat='override' #currently, error message is being thrown on one column.
                               )
 
-    # print(aq_print['w_a'])
-    # print(aq_print['w_s'])
-
     aq['w_w'], aq['dw_w'] = find_third_component(x1=aq['w_s'], x2=aq['w_a'], dx2=aq['dw_a'])
-    aq_print = aq.sel({'temperature': 25.0}, method='nearest').sel({'amine':'diisopropylamine'})
-    #
-    # print(aq_print['w_a'])
-    # print(aq_print['w_s'])
-    # print(aq_print['w_w'])
-
     return aq
 
 
 def find_third_component(x1, x2, dx1=None, dx2=None):
-    # x1, x2, dx1, dx2 = x1.values, x2.values, dx1.values, dx2.values
     # print('\n \n \nIn find_third_component')
     # print('x1: \n {}'.format(x1))
     # print('x2: \n {}'.format(x2))

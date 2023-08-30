@@ -3,7 +3,7 @@ import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
 from tsse_data.calibs import na_calib, cl_calib
-from tsse_data.general_processing import adjust_for_molecular_weight
+from tsse_data.general_processing import adjust_for_molecular_weight, convert_ion_to_salt
 
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
@@ -46,7 +46,8 @@ def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False
     return
 
 
-def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False, second_dilution=False):
+def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw_data=False, second_dilution=False,
+                               salt_conversion=None):
     df = pd.read_excel(filepath)
 
     if print_raw_data:
@@ -81,7 +82,10 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
 
         # average over replicates
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
-        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(2)
+        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
+
+        if salt_conversion is not None:
+            ds = convert_ion_to_salt(ds, salt_conversion)
     return ds
 
 

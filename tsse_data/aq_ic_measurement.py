@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.calibs import na_calib, cl_calib
-from tsse_data.general_processing import adjust_for_molecular_weight, df_to_ds, check_willingness
+from tsse_data.general_processing import adjust_for_molecular_weight, df_to_ds, check_willingness, convert_ion_to_salt
 
 
 def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, second_dilution: bool = False):
@@ -48,7 +48,7 @@ def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, seco
 
 
 def process_aq_ic_spreadsheet(filepath, dims, ions,
-                              salt=None,
+                              salt_conversion=None,
                               common_dims: list = None,
                               print_raw_data: bool = False,
                               second_dilution: bool = False,
@@ -90,39 +90,13 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
         ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
 
-    if salt is not None:
-        ds = convert_ion_to_salt(ds, salt)
+    if salt_conversion is not None:
+        ds = convert_ion_to_salt(ds, salt_conversion)
 
     return ds
 
 
-def convert_ion_to_salt(ds, salt):
-    if isinstance(salt, dict):
-        pass
-    else:
-        print('In convert_ion_to_salt')
-        print('salt must be type dict. A non-dict was passed.')
 
-    # if salt.keys() == ['name_ion_measured', 'n_ion', 'mw_ion', 'mw_salt']:
-    #     pass
-    # else:
-    #     print('In convert_ion_to_salt')
-    #     print('salt.keys() must be [\'name_ion_measured\', \'n_ion\', \'mw_ion\', \'mw_salt\']')
-    #     print('Keys of salt were:')
-    #     print(salt.keys())
-    #     return
-
-    i_name = salt['name_ion_measured']
-    n_i = salt['n_ion']
-    mw_i = salt['mw_ion']
-    mw_s = salt['mw_salt']
-
-    k = mw_s / (n_i * mw_i)
-
-    ds['w_s'] = ds['w_' + i_name] * k
-    ds['dw_s'] = ds['dw_' + i_name] * k
-
-    return ds
 
 
 def new_na_calib(a):
@@ -147,8 +121,9 @@ def main():
     fp = './aq_ic_sheet.xlsx'
     # create_aq_ic_spreadsheet(fp, dims, ions)
 
-    ds = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d,
-                                   salt={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45, 'mw_salt': 58.44})
+    ds = process_aq_ic_spreadsheet(fp, dims, ions,
+                                   salt_conversion={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45,
+                                                    'mw_salt': 58.44}, common_dims=addl_d)
     print(ds)
 
     return

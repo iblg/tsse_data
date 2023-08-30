@@ -35,3 +35,32 @@ def check_willingness(func_name, filepath):
     else:
         print('create_aq_ion_spreadsheet aborted.')
         return False
+
+
+def convert_ion_to_salt(ds, salt_conversion):
+    if isinstance(salt_conversion, dict):
+        pass
+    else:
+        print('In convert_ion_to_salt')
+        print('salt must be type dict. A non-dict was passed.')
+
+    # if salt.keys() == ['name_ion_measured', 'n_ion', 'mw_ion', 'mw_salt']:
+    #     pass
+    # else:
+    #     print('In convert_ion_to_salt')
+    #     print('salt.keys() must be [\'name_ion_measured\', \'n_ion\', \'mw_ion\', \'mw_salt\']')
+    #     print('Keys of salt were:')
+    #     print(salt.keys())
+    #     return
+
+    i_name = salt_conversion['name_ion_measured']
+    n_i = salt_conversion['n_ion']
+    mw_i = salt_conversion['mw_ion']
+    mw_s = salt_conversion['mw_salt']
+
+    k = mw_s / (n_i * mw_i)
+
+    ds['w_s'] = ds['w_' + i_name] * k
+    ds['dw_s'] = ds['dw_' + i_name] * k
+
+    return ds
