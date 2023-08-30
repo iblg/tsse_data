@@ -178,13 +178,13 @@ def main():
     # create_toc_spreadsheet('./toc_spreadsheet_1.xlsx', d, tic = False)
     #
     fp = './toc_spreadsheet_1.xlsx'
-    ds = process_toc_spreadsheet(fp, d, common_dims=addl_d,
+    dipa = {'nc': 6, 'mw': 101.19}
+    ds = process_toc_spreadsheet(fp, d, amine=dipa, common_dims=addl_d,
                                  calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
 
 
     ds = ds.sel({'amine': 'dipa', 'temperature': 25, 'phase': 'o', 'salt': 'nacl'})
-    ds = ds.sel({'sample': '3a'})
-    print(ds)
+    print(ds['dw_a'])
 
     return
 

@@ -57,9 +57,7 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
 
     if print_raw_data:
         print(df)
-
     idx = check_spreadsheet(df, filepath, dims, common_dims)
-
     df = df.set_index(idx)
 
     # ds['m_sample'] = ds['m_with_sample'] - ds['m_dish']
@@ -92,7 +90,6 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
         ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
 
-    print(ds)
     if salt is not None:
         ds = convert_ion_to_salt(ds, salt)
 
@@ -152,7 +149,7 @@ def main():
 
     ds = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d,
                                    salt={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45, 'mw_salt': 58.44})
-    print(ds['dw_s'])
+    print(ds)
 
     return
 

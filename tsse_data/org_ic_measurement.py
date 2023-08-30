@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
-from calibs import na_calib, cl_calib
-from general_processing import adjust_for_molecular_weight
+from tsse_data.calibs import na_calib, cl_calib
+from tsse_data.general_processing import adjust_for_molecular_weight
 
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
