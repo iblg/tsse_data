@@ -1,4 +1,5 @@
 def check_spreadsheet(df, filepath, dims, common_dims):
+    idx = []
     if isinstance(filepath, str):
         pass
     else:
@@ -17,8 +18,9 @@ def check_spreadsheet(df, filepath, dims, common_dims):
     elif isinstance(common_dims, dict):
         for key, val in common_dims.items():  # write one column per common_dim
             df[key] = val
-        [idx.append(d) for d in common_dims]
+            idx.append(key)
     else:
         print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
         print('common_dims must be a dict. \n \n \n ')
+
     return idx
