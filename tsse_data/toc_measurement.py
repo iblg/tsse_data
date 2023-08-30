@@ -47,7 +47,6 @@ def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3
             tic_cols = ['TIC1', 'TIC2', 'TIC', 'dTIC']
             [cols.append(col_name) for col_name in tic_cols]
 
-
         toc_sheet = pd.DataFrame(columns=cols)
 
         toc_sheet.to_excel(filepath, index=False)
@@ -75,13 +74,16 @@ def adjust_for_dilution(df):
 
 
 def adjust_for_calibration(df, calib_curves):
-    df['w_toc_to_ic'] = np.zeros(df.shape[0])
-    for i in range(df.shape[0]):
-        for j in calib_curves:
-            if j[0] < df['TOC_raw'].iloc[i] < j[1]:
-                func = j[2]
+    if calib_curves is None:
+        df['w_toc_to_ic'] = df['w_toc_raw']
+    else:
+        df['w_toc_to_ic'] = np.zeros(df.shape[0])
+        for i in range(df.shape[0]):
+            for j in calib_curves:
+                if j[0] < df['TOC_raw'].iloc[i] < j[1]:
+                    func = j[2]
 
-        df['w_toc_to_ic'].iloc[i] = func(df['w_toc_raw'].iloc[i])
+            df['w_toc_to_ic'].iloc[i] = func(df['w_toc_raw'].iloc[i])
 
     return df
 
@@ -107,57 +109,42 @@ def get_mean_toc(ds):
     ds : xarray.Dataset
     ds is the TOC dataset under processing in process_toc_spreadsheet.
 
-    This performs an unweighted mean and standard of the TOC over replicates. note: replicates here mean the different vials stuck
-    into the TOC machine. Future versions of this may include the option to do a weighted average of multiple TOC machine
-    readouts to take into account the fact that the TOC machine itself reports uncertainty.
+    This performs an unweighted mean and standard error of the TOC over replicates. note: replicates here mean the
+    different vials put into the TOC machine. Future versions of this may include the option to do a weighted average
+    of multiple TOC machine readouts to take into account the fact that the TOC machine itself reports uncertainty.
     """
-    ds['w_toc'] = ds['w_toc_adj_dil'].mean(dim='replicate')
-    ds['dw_toc'] = ds['w_toc_adj_dil'].std(dim='replicate') / np.sqrt(2)
-
+    ds['dw_a'] = ds['w_a'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
+    ds['w_a'] = ds['w_a'].mean(dim='replicate')
     return ds
 
 
-# def convert_toc_w_amine(df, nc, mw):
-#     """
-#     df : pandas.DataFrame
-#     The DataFrame containing the TOC data you are processing.
-#     nc : int
-#     The number of carbon atoms your amine molecule contains.
-#     mw : float
-#     The molecular weight of your amine molecule.
-#     """
-#
-#     if isinstance(nc, int):
-#         pass
-#     elif isinstance(nc, float):
-#         nc = int(nc)
-#         print('nc was passed as a float. Forcing to typecast as int.')
-#     else:
-#         print('nc was not an int. Please provide an integer nc to convert_toc_w_amine.')
-#
-#     if isinstance(mw, float):
-#         pass
-#     elif isinstance(nc, int):
-#         pass
-#     else:
-#         print('mw was not a float. Please provide a float mw to convert_toc_w_amine.')
-#
-#
-#     df['w_a'] = df['TOC'] * 10**(-9) * mw / (nc * 12.011)
-#     df['dw_a'] = df['dTOC'] * 10**(-9) * mw / (nc * 12.011)
-#     return df
+def convert_toc_w_amine(df, amine):
+    nc = amine['nc']
+    mw = amine['mw']
+
+    if isinstance(nc, int):
+        pass
+    elif isinstance(nc, float):
+        nc = int(nc)
+        print('nc was passed as a float. Forcing to typecast as int.')
+        print('nc is {}'.format(nc))
+    else:
+        print(
+            'nc was not an int and could not be typecast as int. Please provide an integer nc to convert_toc_w_amine.')
+
+    if isinstance(mw, float):
+        pass
+    else:
+        print('mw was not a float. Please provide a float mw to convert_toc_w_amine.')
+
+    df['w_a'] = df['w_toc_adj_dil'] * mw / (nc * 12.011)
+    # df['dw_a'] = df['dw_toc_adj_dil'] * mw / (nc * 12.011) # temporarily, I have not worked in error propagation.
+    return df
 
 
-def process_toc_spreadsheet(filepath, dims, common_dims=None, calib_curves=None):
+def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims: dict = None, calib_curves=None):
     """
-    filepath : str
-    The filepath to the TOC spreadsheet you wish to create.
 
-    dims : list or array
-    The list of column names that you wish to use as dims. These should be the same as the dims of your overall experiment.
-
-    common_dims : dict, default None.
-    additional dims that apply to all measurements in the spreadsheet. Keys become xarray dims; vals become xarray coords.
     """
     df = read_toc_spreadsheet(filepath)
     df['w_toc_raw'] = df['TOC_raw'] / 10 ** 9
@@ -170,7 +157,10 @@ def process_toc_spreadsheet(filepath, dims, common_dims=None, calib_curves=None)
 
     df = adjust_for_dilution(df)
 
+    df = convert_toc_w_amine(df, amine)
+
     ds = df.to_xarray()
+
     ds = get_mean_toc(ds)
 
     for i in idx:
@@ -190,17 +180,12 @@ def main():
     fp = './toc_spreadsheet_1.xlsx'
     ds = process_toc_spreadsheet(fp, d, common_dims=addl_d,
                                  calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
-    ds['w_dipa'] = ds['w_toc'] * 101.19 / (6 * 12.011)
-    ds['dw_dipa'] = ds['dw_toc'] * 101.19 / (6 * 12.011)
+
 
     ds = ds.sel({'amine': 'dipa', 'temperature': 25, 'phase': 'o', 'salt': 'nacl'})
     ds = ds.sel({'sample': '3a'})
     print(ds)
-    # ds = get_mean_toc(ds)
-    # print(ds)
-    #
-    # print(x)
-    # pass
+
     return
 
 
