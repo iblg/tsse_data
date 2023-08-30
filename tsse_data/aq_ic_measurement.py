@@ -48,9 +48,11 @@ def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, seco
 
 
 def process_aq_ic_spreadsheet(filepath, dims, ions,
+                              salt=None,
                               common_dims: list = None,
                               print_raw_data: bool = False,
-                              second_dilution: bool = False):
+                              second_dilution: bool = False,
+                              ):
     df = pd.read_excel(filepath)
 
     if print_raw_data:
@@ -88,27 +90,69 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
     # average over replicates
     for ion, calibration in ions.items():
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
-        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(2)
+        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
+
+    print(ds)
+    if salt is not None:
+        ds = convert_ion_to_salt(ds, salt)
 
     return ds
+
+
+def convert_ion_to_salt(ds, salt):
+    if isinstance(salt, dict):
+        pass
+    else:
+        print('In convert_ion_to_salt')
+        print('salt must be type dict. A non-dict was passed.')
+
+    # if salt.keys() == ['name_ion_measured', 'n_ion', 'mw_ion', 'mw_salt']:
+    #     pass
+    # else:
+    #     print('In convert_ion_to_salt')
+    #     print('salt.keys() must be [\'name_ion_measured\', \'n_ion\', \'mw_ion\', \'mw_salt\']')
+    #     print('Keys of salt were:')
+    #     print(salt.keys())
+    #     return
+
+    i_name = salt['name_ion_measured']
+    n_i = salt['n_ion']
+    mw_i = salt['mw_ion']
+    mw_s = salt['mw_salt']
+
+    k = mw_s / (n_i * mw_i)
+
+    ds['w_s'] = ds['w_' + i_name] * k
+    ds['dw_s'] = ds['dw_' + i_name] * k
+
+    return ds
+
+
+def new_na_calib(a):
+    # filter: perform any filtering needed to determine which calibration function is best
+    # to be implemented
+    # apply function
+    loga = np.log10(a)
+    m = 1
+    b = 1
+    logw = m * loga + b
+    w = 10 ** logw
+    return w
 
 
 def main():
     dims = ['sample', 'replicate']
     addl_d = {'amine': 'dipa', 'cation': 'Na', 'anion': 'Cl'}
-    ions = {'Na': na_calib,
-            # 'Cl': cl_calib
-            }
+    ions = {
+        # 'Na': na_calib,
+        'Cl': cl_calib
+    }
     fp = './aq_ic_sheet.xlsx'
     # create_aq_ic_spreadsheet(fp, dims, ions)
-    ds = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d)
-    ds2 = ds.sel({'amine': 'dipa', 'cation': 'Na', 'anion': 'Cl'})
-    print(ds2['w_Na'])
-    ds = adjust_for_molecular_weight(ds, {'Na': (22.99, 58.44, 'NaCl')})
-    print(ds['w_NaCl'])
-    # ds = df_to_ds(df)
 
-    # print(ds['w_NaCl_replicate'])
+    ds = process_aq_ic_spreadsheet(fp, dims, ions, common_dims=addl_d,
+                                   salt={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45, 'mw_salt': 58.44})
+    print(ds['dw_s'])
 
     return
 
