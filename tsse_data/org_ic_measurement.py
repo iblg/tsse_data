@@ -57,43 +57,56 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
 
     df = df.set_index(idx)
 
-    ds = df.to_xarray()
-    ds['m_sample'] = ds['m_with_sample'] - ds['m_dish']
-    ds['m_salt'] = ds['m_with_salt'] - ds['m_dish']
-    ds['m_solution'] = ds['m_with_DI water'] - ds['m_dish']
+    df['m_sample'] = df['m_with_sample'] - df['m_dish']
+    df['m_salt'] = df['m_with_salt'] - df['m_dish']
+    df['m_solution'] = df['m_with_DI water'] - df['m_dish']
 
     for ion, calibration in ions.items():
 
         # transform to log
         # ds['log_' + 'A_' + ion] = np.log10(ds['A_' + ion])
-        ds['w_' + ion + '_to_ic'] = calibration(ds['A_' + ion])
+        df['w_' + ion + '_to_ic'] = calibration(df['A_' + ion])
         # ds['log_w_' + ion] = calibration(ds['log_A_' + ion]) # use the calibration function passed
         # ds['w_' + ion + '_to_ic'] = 10 ** (ds['log_w_' + ion])  # re-transform from log units to normal
 
         # dilutions
-        dil1 = ds['m_solution'] / ds['m_sample']
+        dil1 = df['m_solution'] / df['m_sample']
 
         if second_dilution:  # if you did a second dilution:
-            dil2 = (ds['m_solution_to_ic'] + ds['m_di_to_ic']) / ds['m_di_to_ic']
+            dil2 = (df['m_solution_to_ic'] + df['m_di_to_ic']) / df['m_di_to_ic']
         else:
             dil2 = 1
 
-        ds['w_' + ion + '_rep'] = ds['w_' + ion + '_to_ic'] * dil1 * dil2
+        df['w_' + ion + '_rep'] = df['w_' + ion + '_to_ic'] * dil1 * dil2
 
+    ds = df.to_xarray()
+    for ion, calibration in ions.items():
         # average over replicates
         ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
         ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
 
         if salt_conversion is not None:
             ds = convert_ion_to_salt(ds, salt_conversion)
+
+
     return ds
 
+def linewise_calib(a):
+    # filter: perform any filtering needed to determine which calibration function is best
+    # to be implemented
+    # apply function
+    loga = np.log10(a)
+    m = 0.9367262838
+    b = -5.128
+    logw = m * loga + b
+    w = 10 ** logw
+    return w
 
 def main():
     fp = './org_ic_spread.xlsx'
 
     dims = ['sample', 'temperature', 'ion', 'phase', 'replicate']
-    ions = {'Cl': cl_calib}
+    ions = {'Cl': linewise_calib}
 
     # create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
     ds = process_org_ic_spreadsheet(fp, dims, ions)
