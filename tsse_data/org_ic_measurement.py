@@ -103,7 +103,7 @@ def main():
     ds = ds.sel({'temperature': 25.0}, method='nearest').sel({'phase': 'o', 'ion': 'Cl'})
     # print(ds)
     ds = adjust_for_molecular_weight(ds, {'Cl': (35.45, 58.44, 'NaCl')})
-    print(ds['dw_NaCl'])
+    print(ds['w_NaCl'])
     return
 
 
