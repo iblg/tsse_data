@@ -23,7 +23,9 @@ def get_x_single_component(tuple1, tuple2, tuple3):
 
     denom = w1 / mw1 + w2 / mw2 + w3 / mw3
     x1 = w1 / mw1 / denom
-    dx1 = - w1 / (mw1 * denom ** 2) * (dw2 / mw2 + dw3 / mw3) + dw1 * (w1 / (mw1 ** 2 * denom ** 2) + 1 / (mw1 * denom))
+    # dx1 = - w1 / (mw1 * denom ** 2) * (dw2 / mw2 + dw3 / mw3) + dw1 * (w1 / (mw1 ** 2 * denom ** 2) + 1 / (mw1 * denom))
+    dx1 = -((mw1 * mw2 * mw3 * (dw3 * mw2 *  w1 + dw2 * mw3 * w1 - dw1 * mw3 * w2 - dw1 * mw2 * w3))/(
+            mw2 * mw3 * w1 + mw1 * mw3 * w2 + mw1 * mw2 * w3)**2)
 
     # as-yet untested function for finding the mole frac + uncertainty on a single one.
     return x1, dx1

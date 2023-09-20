@@ -29,22 +29,21 @@ def check_spreadsheet(df, filepath, dims, common_dims):
     return idx
 
 
-def check_dims(dims, common_dims):
-    if isinstance(dims, list):
-        pass
-    else:
-        print('\n \n \ndims was passed but was format {}'.format(type(dims)))
-        print('dims must be a list of strings. \n \n \n ')
+def get_idx(df, dims, common_dims):
+
+    idx = dims
 
     if common_dims is None:
         pass
-    elif isinstance(common_dims, dict):
-        pass
     else:
-        print('\n \n \ncommon_dims was passed but was format {}'.format(type(common_dims)))
-        print('common_dims must be a dict. \n \n \n ')
+        for key, val in common_dims.items():  # write one column per common_dim
+            df[key] = val
+            if key in idx:
+                pass
+            else:
+                idx.append(key)
 
-    return
+    return idx
 
 
 def write_common_dims_to_sheet(df, common_dims):

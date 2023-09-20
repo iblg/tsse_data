@@ -1,7 +1,7 @@
 import xarray as xr
 import pandas as pd
-from tsse_data.check_spreadsheet import check_spreadsheet, check_dims, write_common_dims_to_sheet, \
-    write_variable_attrs
+from tsse_data.check_spreadsheet import check_spreadsheet, write_common_dims_to_sheet, \
+    write_variable_attrs, check_dims
 
 
 def check_dataset_dims(datasets, common_dims):
