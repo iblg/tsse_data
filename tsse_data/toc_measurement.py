@@ -32,7 +32,7 @@ def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3
             std_cols.append('m_h3po4')
 
         if reporting == 'mean':
-            std_cols += ['TOC_raw', 'dTOC_raw']
+            std_cols += ['toc_raw', 'dtoc_raw']
         elif reporting == 'replicates':
             repl_list = []
             [repl_list.append('TOC_{}_raw'.format(r)) for r in range(1, meas_per_vial + 1)]
@@ -68,40 +68,63 @@ def adjust_for_dilution(df):
     df : pandas.DataFrame
     The DataFrame containing the TOC data you are processing.
     """
-    df['w_toc_adj_dil'] = df['w_toc_to_ic'] * (1 + df['m_water'] / df['m_sample'])
+    df['w_toc_adj_dil'] = df['w_toc_calibrated'] * (1 + df['m_water'] / df['m_sample'])
 
     return df
 
 
-def adjust_for_calibration(df, calib_curves):
-    if calib_curves is None:
-        df['w_toc_to_ic'] = df['w_toc_raw']
-    else:
-        df['w_toc_to_ic'] = np.zeros(df.shape[0])
-        for i in range(df.shape[0]):
-            for j in calib_curves:
-                if j[0] < df['TOC_raw'].iloc[i] < j[1]:
-                    func = j[2]
-
-            df['w_toc_to_ic'].iloc[i] = func(df['w_toc_raw'].iloc[i])
-
-    return df
+def adjust_for_calibration(toc, calib):
+    if calib is None:
+        return toc
+    toc = toc_calib(toc)
+    return toc
 
 
-def low_calib(toc):
-    log_toc_meas = np.log10(toc)
-    log_toc_actual = log_toc_meas * 1.1019 + 0.12
-    print(log_toc_actual)
+def toc_calib(df: pd.DataFrame):
+    ### a general format for a linear log w log a calibration. You can change the break conditions
+    # and the slopes as needed
+    # filter: perform any filtering needed to determine which calibration function is best
+    # to be implemented
+    # apply function
+    toc = df['toc_raw']
+    w_toc = df['w_toc_raw']
+    breaks = [25000, 100000]  # set your breakpoints here
 
-    toc_actual = 10 ** log_toc_actual
-    return toc_actual
+    log_w_toc = np.log10(w_toc)
+    log_w_toc_calib = pd.Series(0, index=toc.index)
 
+    for i, item in toc.items():
+        ## set params
+        if item < breaks[0]:
+            m = 1.1019
+            b = 0.12
+        elif item < breaks[1]:
+            m = 0.88
+            b = -0.55
+        else:
+            print('TOC measurement is over range. Max value in this calibration curve is {}'.format(breaks[-1]))
 
-def high_calib(toc):
-    log_toc_meas = np.log10(toc)
-    log_toc_actual = log_toc_meas * 0.88 - 0.55
-    toc_actual = 10 ** log_toc_actual
-    return toc_actual
+        log_w_toc_calib[i] = b + m * log_w_toc[i]
+
+    toc = 10 ** log_w_toc_calib
+
+    return toc
+#
+#
+# def low_calib(toc):
+#     log_toc_meas = np.log10(toc)
+#     log_toc_actual = log_toc_meas * 1.1019 + 0.12
+#     print(log_toc_actual)
+#
+#     toc_actual = 10 ** log_toc_actual
+#     return toc_actual
+#
+#
+# def high_calib(toc):
+#     log_toc_meas = np.log10(toc)
+#     log_toc_actual = log_toc_meas * 0.88 - 0.55
+#     toc_actual = 10 ** log_toc_actual
+#     return toc_actual
 
 
 def get_mean_toc(ds):
@@ -113,7 +136,7 @@ def get_mean_toc(ds):
     different vials put into the TOC machine. Future versions of this may include the option to do a weighted average
     of multiple TOC machine readouts to take into account the fact that the TOC machine itself reports uncertainty.
     """
-    ds['dw_a'] = ds['w_a'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
+    ds['dw_a'] = ds['w_a'].std(dim='replicate')
     ds['w_a'] = ds['w_a'].mean(dim='replicate')
     return ds
 
@@ -142,31 +165,37 @@ def convert_toc_w_amine(df, amine):
     return df
 
 
-def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims: dict = None, calib_curves=None):
+def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims: dict = None, calib=None):
     """
 
     """
     df = read_toc_spreadsheet(filepath)
-    df['w_toc_raw'] = df['TOC_raw'] / 10 ** 9
-    df['dw_toc_raw'] = df['dTOC_raw'] / 10 ** 9
+
 
     idx = check_spreadsheet(df, filepath, dims, common_dims)
     df = df.set_index(idx)
 
-    df = adjust_for_calibration(df, calib_curves)
+    df['w_toc_raw'] = df['toc_raw'] / 10 ** 9
+    df['dw_toc_raw'] = df['dtoc_raw'] / 10 ** 9
+
+    df['w_toc_calibrated'] = adjust_for_calibration(df, toc_calib)
+    df['dw_toc_calibrated'] = adjust_for_calibration(df, toc_calib)
 
     df = adjust_for_dilution(df)
 
     df = convert_toc_w_amine(df, amine)
+    print(df['w_a'])
 
     ds = df.to_xarray()
 
     ds = get_mean_toc(ds)
-
-    for i in idx:
-        ds = ds.drop_duplicates(dim=i)
-    # df = convert_toc_w_amine(df, nc, mw)
+    #
+    # for i in idx:
+    #     ds = ds.drop_duplicates(dim=i)
+    # print(ds['w_a'].values)
+    print(ds.sel(sample='1a',phase='o', amine='dipa', salt='nacl'))
     return ds
+
 
 
 def main():
@@ -180,11 +209,10 @@ def main():
     fp = './toc_spreadsheet_1.xlsx'
     dipa = {'nc': 6, 'mw': 101.19}
     ds = process_toc_spreadsheet(fp, d, amine=dipa, common_dims=addl_d,
-                                 calib_curves=[(0, 25000, low_calib), (25001, 200000, high_calib)])
-
+                                 calib=toc_calib
+                                 )
 
     ds = ds.sel({'amine': 'dipa', 'temperature': 25, 'phase': 'o', 'salt': 'nacl'})
-    print(ds['dw_a'])
 
     return
 
