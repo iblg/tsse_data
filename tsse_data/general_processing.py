@@ -20,6 +20,7 @@ def adjust_for_molecular_weight(ds: xarray.Dataset,
     for ion, val in ion_tuple.items():
         salt = val[2]
         ds['w_' + salt] = ds['w_' + ion] * val[1] / val[0]
+        ds['dw_' + salt] = ds['dw_' + ion] * val[1] / val[0]
     return ds
 
 
