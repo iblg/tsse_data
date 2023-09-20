@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-from tsse_data.check_spreadsheet import check_spreadsheet
+from tsse_data.check_spreadsheet import check_spreadsheet, get_idx
 from tsse_data.general_processing import check_willingness
 
 
-def create_kf_spreadsheet(filepath, dims):
+def create_kf_spreadsheet(filepath, dims, ep1: bool = False, titer: bool = False):
     """
     filepath : str
     The filepath to the KF spreadsheet you wish to create.
@@ -22,6 +22,13 @@ def create_kf_spreadsheet(filepath, dims):
         cols = dims
 
         std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
+
+        if ep1:
+            std_cols.append('EP1')
+
+        if titer:
+            std_cols.append('titer')
+
         [cols.append(col_name) for col_name in std_cols]
 
         df = pd.DataFrame(columns=cols)
@@ -39,8 +46,7 @@ def process_kf_spreadsheet(filepath, dims, common_dims=None, print_raw_df=False)
     if print_raw_df:
         print(df)
 
-    idx = check_spreadsheet(df, filepath, dims, common_dims)
-
+    idx = get_idx(df, dims, common_dims)
     df = df.set_index(idx)
     ds = df.to_xarray()
     ds = find_ww(ds)
