@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
-from tsse_data.calibs import na_calib, cl_calib
+from tsse_data.calibs import na_calib, cl_calib, linewise_calib
 from tsse_data.general_processing import adjust_for_molecular_weight, convert_ion_to_salt
 
 
@@ -88,19 +88,9 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
         if salt_conversion is not None:
             ds = convert_ion_to_salt(ds, salt_conversion)
 
-
     return ds
 
-def linewise_calib(a):
-    # filter: perform any filtering needed to determine which calibration function is best
-    # to be implemented
-    # apply function
-    loga = np.log10(a)
-    m = 0.9367262838
-    b = -5.128
-    logw = m * loga + b
-    w = 10 ** logw
-    return w
+
 
 def main():
     fp = './org_ic_spread.xlsx'
@@ -110,10 +100,10 @@ def main():
 
     # create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
     ds = process_org_ic_spreadsheet(fp, dims, ions)
-    ds = ds.sel({'temperature': 25.0}, method='nearest').sel({'phase': 'o', 'ion': 'Na'})
-    print(ds)
+    ds = ds.sel({'temperature': 25.0}, method='nearest').sel({'phase': 'o', 'ion': 'Cl'})
+    # print(ds)
     ds = adjust_for_molecular_weight(ds, {'Cl': (35.45, 58.44, 'NaCl')})
-    print(ds['w_NaCl'])
+    print(ds['dw_NaCl'])
     return
 
 
