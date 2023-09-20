@@ -66,20 +66,19 @@ def find_ww(ds):
     x = ds['wt_percent_water'] / 100.
 
     ds['w_w'] = x.mean(dim='replicate')
-    ds['dw_w'] = x.std(dim='replicate') / np.sqrt(2)
+    ds['dw_w'] = x.std(dim='replicate')
 
     return ds
 
 
 def main():
-    dims = ['amine', 'sample', 'phase']
+    dims = ['sample', 'replicate']
     fp = './kf_sheet.xlsx'
-    create_kf_spreadsheet(fp, dims)
-    # fp = '/Users/ianbillinge/Documents/yiplab/projects/new_saxs/phase_diagram/pd_kf.xlsx'
-    # df = read_kf_spreadsheet(fp)
-    # dims = ['amine', 'temperature', 'sample', 'replicate']
-    # ds = process_kf_spreadsheet(fp, dims, common_dims={'phase': 'org'})
-    # print(ds)
+    # create_kf_spreadsheet(fp, dims)
+    # fp = '/Users/ianbillinge/dev/tsse_data/tsse_data/tests/merge_tests/kf.xlsx'
+    df = read_kf_spreadsheet(fp)
+    ds = process_kf_spreadsheet(fp, dims, common_dims={'phase': 'org'})
+    print(ds)
 
     return
 
