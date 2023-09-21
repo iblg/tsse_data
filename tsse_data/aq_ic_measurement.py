@@ -49,7 +49,7 @@ def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, seco
 
 def process_aq_ic_spreadsheet(filepath, dims, ions,
                               salt_conversion=None,
-                              common_dims: list = None,
+                              common_dims: dict = None,
                               print_raw_data: bool = False,
                               second_dilution: bool = False,
                               ):

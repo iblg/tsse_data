@@ -184,16 +184,11 @@ def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims:
     df = adjust_for_dilution(df)
 
     df = convert_toc_w_amine(df, amine)
-    print(df['w_a'])
 
     ds = df.to_xarray()
 
     ds = get_mean_toc(ds)
-    #
-    # for i in idx:
-    #     ds = ds.drop_duplicates(dim=i)
-    # print(ds['w_a'].values)
-    print(ds.sel(sample='1a',phase='o', amine='dipa', salt='nacl'))
+
     return ds
 
 
