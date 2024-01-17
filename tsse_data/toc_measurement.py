@@ -30,7 +30,6 @@ def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3
 
         if h3po4:
             std_cols.append('m_h3po4')
-
         if reporting == 'mean':
             std_cols += ['toc_raw', 'dtoc_raw']
         elif reporting == 'replicates':
