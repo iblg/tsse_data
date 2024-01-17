@@ -103,6 +103,8 @@ def toc_calib(df: pd.DataFrame):
             b = -0.55
         else:
             print('TOC measurement is over range. Max value in this calibration curve is {}'.format(breaks[-1]))
+            print('TOC was {}'.format(item))
+            pass
 
         log_w_toc_calib[i] = b + m * log_w_toc[i]
 

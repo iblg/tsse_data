@@ -20,7 +20,7 @@ def merge_phases(org, aq):
     return merged
 
 
-def merge_org_phase(org_ic: xarray.Dataset, kf: xarray.Dataset):
+def merge_org_phase(org_ic: xarray.Dataset, kf: xarray.Dataset, compatibility: str = 'override'):
     """
     Takes org_ic and kf, two xarray Datasets, and returns a single Dataset.
     To do this, merge_org_phase simply takes the org_ic dataset and adds variables for 'w_w' and 'dw_w'.
@@ -41,8 +41,8 @@ def merge_org_phase(org_ic: xarray.Dataset, kf: xarray.Dataset):
         print('Dims of kf are: \n {} \n'.format(kf.dims))
 
     org = xr.combine_by_coords([org_ic, kf],
-                              # compat='override' #currently, error message is being thrown on one column.
-                              )
+                               compat=compatibility  # currently, error message is being thrown on one column.
+                               )
     # org = org_ic
     # org['w_w'], org['dw_w'] = kf['w_w'], kf['dw_w']
     # org['w_s'], org['w_s'] = org_ic['w_s'], org_ic['dw_s']
@@ -52,7 +52,7 @@ def merge_org_phase(org_ic: xarray.Dataset, kf: xarray.Dataset):
     return org
 
 
-def merge_aq_phase(aq_ic, toc):
+def merge_aq_phase(aq_ic, toc, compat: str = 'override'):
     if aq_ic.dims == toc.dims:
         pass
     else:
@@ -61,7 +61,7 @@ def merge_aq_phase(aq_ic, toc):
         print('Dims of toc are: \n {} \n'.format(toc.dims))
 
     aq = xr.combine_by_coords([aq_ic, toc],
-                              compat='override' #currently, error message is being thrown on one column.
+                              compat=compat  # currently, error message is being thrown on one column.
                               )
 
     aq['w_w'], aq['dw_w'] = find_third_component(x1=aq['w_s'], x2=aq['w_a'], dx2=aq['dw_a'])

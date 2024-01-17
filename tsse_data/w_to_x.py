@@ -2,6 +2,7 @@ import xarray
 import xarray as xr
 import numpy as np
 
+
 def w_to_x(ds: xarray.Dataset):
     """
     """
@@ -25,8 +26,8 @@ def get_x_single_component(tuple1, tuple2, tuple3):
     x1 = w1 / mw1 / denom
     # dx1 = - w1 / (mw1 * denom ** 2) * (dw2 / mw2 + dw3 / mw3) + dw1 * (w1 / (mw1 ** 2 * denom ** 2) + 1 / (mw1 * denom))
     dx1 = -mw1 * mw2 * mw3 * (dw3 * mw2 * w1 + dw2 * mw3 * w1 - dw1 * mw3 * w2 - dw1 * mw2 * w3) / (
-            mw2 * mw3 * w1 + mw1 * mw3 * w2 + mw1 * mw2 * w3) ** 2 # this line as-yet untested.
-    dx1 = np.abs(dx1) # ham-fisted way to force the error to be positive.
+            mw2 * mw3 * w1 + mw1 * mw3 * w2 + mw1 * mw2 * w3) ** 2  # this line as-yet untested.
+    dx1 = np.abs(dx1)  # ham-fisted way to force the error to be positive.
     return x1, dx1
 
 
