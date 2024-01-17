@@ -3,7 +3,7 @@ import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
 from tsse_data.calibs import na_calib, cl_calib, linewise_calib
-from tsse_data.general_processing import adjust_for_molecular_weight, convert_ion_to_salt
+from tsse_data.general_processing import *
 
 
 def create_org_ic_spreadsheet(filepath, dims, ions, spot=False, dish_label=False, second_dil=False):
@@ -62,12 +62,7 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
     df['m_solution'] = df['m_with_DI water'] - df['m_dish']
 
     for ion, calibration in ions.items():
-
-        # transform to log
-        # ds['log_' + 'A_' + ion] = np.log10(ds['A_' + ion])
         df['w_' + ion + '_to_ic'] = calibration(df['A_' + ion])
-        # ds['log_w_' + ion] = calibration(ds['log_A_' + ion]) # use the calibration function passed
-        # ds['w_' + ion + '_to_ic'] = 10 ** (ds['log_w_' + ion])  # re-transform from log units to normal
 
         # dilutions
         dil1 = df['m_solution'] / df['m_sample']
@@ -80,16 +75,8 @@ def process_org_ic_spreadsheet(filepath, dims, ions, common_dims=None, print_raw
         df['w_' + ion + '_rep'] = df['w_' + ion + '_to_ic'] * dil1 * dil2
 
     ds = df.to_xarray()
-    for ion, calibration in ions.items():
-        # average over replicates
-        ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
-        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
-
-        if salt_conversion is not None:
-            ds = convert_ion_to_salt(ds, salt_conversion)
-
+    ds = average_over_replicates(ds, ions, salt_conversion)
     return ds
-
 
 
 def main():
@@ -99,11 +86,14 @@ def main():
     ions = {'Cl': linewise_calib}
 
     # create_org_ic_spreadsheet(fp, dims, ions, spot=True, dish_label=True, second_dil=False)
-    ds = process_org_ic_spreadsheet(fp, dims, ions)
+    ds = process_org_ic_spreadsheet(fp, dims, ions,
+                                    salt_conversion={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45,
+                                                     'mw_salt': 58.44})
+
     ds = ds.sel({'temperature': 25.0}, method='nearest').sel({'phase': 'o', 'ion': 'Cl'})
     # print(ds)
-    ds = adjust_for_molecular_weight(ds, {'Cl': (35.45, 58.44, 'NaCl')})
-    print(ds['dw_NaCl'])
+    # ds = adjust_for_molecular_weight(ds, {'Cl': (35.45, 58.44, 'NaCl')})
+    print(ds['dw_s'])
     return
 
 

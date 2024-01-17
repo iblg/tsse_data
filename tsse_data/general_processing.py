@@ -65,3 +65,18 @@ def convert_ion_to_salt(ds, salt_conversion):
     ds['dw_s'] = ds['dw_' + i_name] * k
 
     return ds
+
+
+def average_over_replicates(ds, ions, salt_conversion):
+    for ion, calibration in ions.items():
+        # average over replicates
+        ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
+        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate')
+
+        if salt_conversion is not None:
+            ds = convert_ion_to_salt(ds, salt_conversion)
+
+    return ds
+
+
+    return

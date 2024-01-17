@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.calibs import na_calib, cl_calib
-from tsse_data.general_processing import adjust_for_molecular_weight, df_to_ds, check_willingness, convert_ion_to_salt
+from tsse_data.general_processing import *
 
 
 def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, second_dilution: bool = False):
@@ -49,7 +49,7 @@ def create_aq_ic_spreadsheet(filepath, dims, ions: str, spot: bool = False, seco
 
 def process_aq_ic_spreadsheet(filepath, dims, ions,
                               salt_conversion=None,
-                              common_dims: list = None,
+                              common_dims: dict = None,
                               print_raw_data: bool = False,
                               second_dilution: bool = False,
                               ):
@@ -60,8 +60,6 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
     idx = check_spreadsheet(df, filepath, dims, common_dims)
     df = df.set_index(idx)
 
-    # ds['m_sample'] = ds['m_with_sample'] - ds['m_dish']
-    # ds['m_salt'] = ds['m_with_salt'] - ds['m_dish']
     df['m_solution'] = df['m_sample'] + df['m_DI']
     #
     for ion, calibration in ions.items():
@@ -78,6 +76,7 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
                 dil2 = df['m_DI_2'] / df['m_first_solution']
             except KeyError:
                 print('Second dilution key not found! The keys must be m_DI_2 and m_first_solution!')
+                return
         else:
             dil2 = 1.
 
@@ -85,30 +84,9 @@ def process_aq_ic_spreadsheet(filepath, dims, ions,
 
     ds = df.to_xarray()
 
-    # average over replicates
-    for ion, calibration in ions.items():
-        ds['w_' + ion] = ds['w_' + ion + '_rep'].mean(dim='replicate')
-        ds['dw_' + ion] = ds['w_' + ion + '_rep'].std(dim='replicate') / np.sqrt(ds.sizes['replicate'])
-
-    if salt_conversion is not None:
-        ds = convert_ion_to_salt(ds, salt_conversion)
+    ds = average_over_replicates(ds, ions, salt_conversion)
 
     return ds
-
-
-
-
-
-def new_na_calib(a):
-    # filter: perform any filtering needed to determine which calibration function is best
-    # to be implemented
-    # apply function
-    loga = np.log10(a)
-    m = 1
-    b = 1
-    logw = m * loga + b
-    w = 10 ** logw
-    return w
 
 
 def main():
@@ -124,7 +102,9 @@ def main():
     ds = process_aq_ic_spreadsheet(fp, dims, ions,
                                    salt_conversion={'name_ion_measured': 'Cl', 'n_ion': 1, 'mw_ion': 35.45,
                                                     'mw_salt': 58.44}, common_dims=addl_d)
-    print(ds)
+    ds = ds.sel(cation='Na', anion='Cl', amine='dipa')
+    print(ds['w_s'].values)
+    print(ds['dw_s'].values)
 
     return
 

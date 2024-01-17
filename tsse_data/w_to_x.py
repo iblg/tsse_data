@@ -1,13 +1,14 @@
 import xarray
 import xarray as xr
+import numpy as np
 
 
 def w_to_x(ds: xarray.Dataset):
     """
     """
-    water = (ds['w_w'], ds['dw_w'], ds.coords['mw_w'])
-    amine = (ds['w_a'], ds['dw_a'], ds.coords['mw_a'])
-    salt = (ds['w_s'], ds['dw_s'], ds.coords['mw_s'])
+    water = (ds['w_w'], ds['dw_w'], ds.coords['mw_w'].values)
+    amine = (ds['w_a'], ds['dw_a'], ds.coords['mw_a'].values)
+    salt = (ds['w_s'], ds['dw_s'], ds.coords['mw_s'].values)
 
     ds['x_w'], ds['dx_w'] = get_x_single_component(water, amine, salt)
     ds['x_a'], ds['dx_a'] = get_x_single_component(amine, salt, water)
@@ -24,10 +25,9 @@ def get_x_single_component(tuple1, tuple2, tuple3):
     denom = w1 / mw1 + w2 / mw2 + w3 / mw3
     x1 = w1 / mw1 / denom
     # dx1 = - w1 / (mw1 * denom ** 2) * (dw2 / mw2 + dw3 / mw3) + dw1 * (w1 / (mw1 ** 2 * denom ** 2) + 1 / (mw1 * denom))
-    dx1 = -((mw1 * mw2 * mw3 * (dw3 * mw2 *  w1 + dw2 * mw3 * w1 - dw1 * mw3 * w2 - dw1 * mw2 * w3))/(
-            mw2 * mw3 * w1 + mw1 * mw3 * w2 + mw1 * mw2 * w3)**2)
-
-    # as-yet untested function for finding the mole frac + uncertainty on a single one.
+    dx1 = -mw1 * mw2 * mw3 * (dw3 * mw2 * w1 + dw2 * mw3 * w1 - dw1 * mw3 * w2 - dw1 * mw2 * w3) / (
+            mw2 * mw3 * w1 + mw1 * mw3 * w2 + mw1 * mw2 * w3) ** 2  # this line as-yet untested.
+    dx1 = np.abs(dx1)  # ham-fisted way to force the error to be positive.
     return x1, dx1
 
 
@@ -38,10 +38,9 @@ def main():
     ds['w_s'], ds['dw_s'] = 0.2, 0.03
 
     # ds = ds.expand_dims(dim=['amine','salt'])
-    ds = ds.assign_coords({'mw_a': 101.19, 'mw_s':58.44, 'mw_w': 18.015})
+    ds = ds.assign_coords({'mw_a': 101.19, 'mw_s': 58.44, 'mw_w': 18.015})
     ds = w_to_x(ds)
     print(ds)
-
 
     return
 

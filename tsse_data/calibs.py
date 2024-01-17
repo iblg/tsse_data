@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-
 def linewise_calib(a: pd.Series):
     ### a general format for a linear log w log a calibration. You can change the break conditions
     # and the slopes as needed
@@ -32,7 +31,6 @@ def linewise_calib(a: pd.Series):
     w = 10 ** logw
 
     return w
-
 
 def na_calib(a):
     # filter: perform any filtering needed to determine which calibration function is best
