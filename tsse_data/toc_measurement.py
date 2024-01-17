@@ -4,7 +4,7 @@ from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
 
 
-def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3po4=False, tic=False, spot=False):
+def create_toc_spreadsheet(filepath: str, dims: tuple, reporting='mean', meas_per_vial=2, h3po4=False, tic=False, spot=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -22,7 +22,14 @@ def create_toc_spreadsheet(filepath, dims, reporting='mean', meas_per_vial=2, h3
     If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
     """
     if check_willingness('create_toc_spreadsheet', filepath):
-        cols = dims
+        if isinstance(dims, tuple):
+            pass
+        else:
+            print('\ndims must be a tuple. A {} was passed.'.format(type(dims)))
+            print('\nCreating spreadsheet aborted.')
+            return
+        cols = list(dims)
+
         if spot:
             cols.append('spot')
 
