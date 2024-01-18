@@ -24,19 +24,6 @@ def create_org_ic_spreadsheet(filepath: str, dims: list, ions: list, spot=False,
     If True, puts in columns for you to indicate the amount of sample and DI water in a second dilution step.ß
     """
     if check_willingness('create_org_ic_spreadsheet', filepath):
-        if isinstance(dims, tuple):
-            pass
-        else:
-            print('\ndims must be a tuple. A {} was passed.'.format(type(dims)))
-            print('\nCreating spreadsheet aborted.')
-            return
-
-        # if isinstance(ions, tuple):
-        #     pass
-        # else:
-        #     print('\nions must be a tuple. A {} was passed.'.format(type(ions)))
-        #     print('\nCreating spreadsheet aborted.')
-        #     return
 
         cols = dims.copy()
         if spot:
