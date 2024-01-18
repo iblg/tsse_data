@@ -46,11 +46,13 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False
 
         std_cols = ['m_dish', 'm_with_sample', 'm_with_salt', 'm_with_DI water']
 
+
+
+        [cols.append(col_name) for col_name in std_cols]
+
         if second_dil:
             cols.append('m_solution_to_ic')
             cols.append('m_di_to_ic')
-
-        [cols.append(col_name) for col_name in std_cols]
 
         iions = ions.copy()
         [cols.append('A_' + ion) for ion in ions]

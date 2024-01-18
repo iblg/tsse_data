@@ -49,11 +49,12 @@ def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: list, spot: boo
 
         std_cols = ['m_sample', 'm_DI']
 
-        if second_dilution:
-            std_cols += ['m_first_solution', 'm_DI_2']
+
 
         [cols.append(col_name) for col_name in std_cols]
-
+        
+        if second_dilution:
+            std_cols += ['m_first_solution', 'm_DI_2']
         iions = ions.copy()
         [cols.append('A_' + ion) for ion in iions]
 
