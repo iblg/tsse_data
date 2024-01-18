@@ -4,7 +4,8 @@ from tsse_data.check_spreadsheet import check_spreadsheet
 from tsse_data.general_processing import check_willingness
 
 
-def create_toc_spreadsheet(filepath: str, dims: list, reporting='mean', meas_per_vial=2, h3po4=False, tic=False, spot=False):
+def create_toc_spreadsheet(filepath: str, dims: list, reporting='mean', meas_per_vial=2, h3po4=False, tic=False,
+                           spot=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -112,6 +113,8 @@ def toc_calib(df: pd.DataFrame):
     toc = 10 ** log_w_toc_calib
 
     return toc
+
+
 #
 #
 # def low_calib(toc):
@@ -152,6 +155,7 @@ def convert_toc_w_amine(df, amine):
         pass
     elif isinstance(nc, float):
         nc = int(nc)
+
         print('nc was passed as a float. Forcing to typecast as int.')
         print('nc is {}'.format(nc))
     else:
@@ -168,14 +172,59 @@ def convert_toc_w_amine(df, amine):
     return df
 
 
+def check_amine_arg(amine):
+
+    if isinstance(amine, dict):
+        pass
+    else:
+        print('Amine argument must be a dict. A {} was passed.'.format(type(amine)))
+        return False
+
+    if 'nc' in amine.keys():
+        pass
+    else:
+        print('amine is missing \'nc\' as a key.')
+        return False
+
+    if 'mw' in amine.keys():
+        pass
+    else:
+        print('amine is missing \'mw\' as a key.')
+        return False
+
+    return True
+
+
 def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims: dict = None, calib=None):
     """
+    filepath: str
+        The filepath to the spreadsheet to be read and evaluated.
 
+    dims: list
+        The list of column names from the spreadsheet that you wish to use as dimension labels.
+
+    amine: dict
+        This dict must contain two key-value pairs:
+            nc, representing the number of carbon atoms in the molecule
+            mw, the molecular weight of the molecule.
+
+    common_dims: dict
+        Common dims is used to add dimensions common to all measurements in this dataset.
+        Each key is a dimension name, and each val is the value to be written to that dimension.
+
+        For example, if all of these measurements were done using diisopropylamine and at 25 C, an argument
+        common_dims = {'amine': 'dipa', 'T': 25}
+        could be included.
+
+    calib: function, default None
+        The calibration function that you wish to apply to the TOC. The TOC is regularly calibrated.
+        If None, no calibration is applied, and the raw TOC values from the machine are used sa the gospel truth.
+        Ian strongly recommends running and using regular calibrations as the Hach TOC has regularly been shown to deviate.
     """
     df = read_toc_spreadsheet(filepath)
+    ddims = dims.copy()
 
-
-    idx = check_spreadsheet(df, filepath, dims, common_dims)
+    idx = check_spreadsheet(df, filepath, ddims, common_dims)
     df = df.set_index(idx)
 
     df['w_toc_raw'] = df['toc_raw'] / 10 ** 9
@@ -186,14 +235,16 @@ def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims:
 
     df = adjust_for_dilution(df)
 
-    df = convert_toc_w_amine(df, amine)
+    if check_amine_arg(amine):
+        df = convert_toc_w_amine(df, amine)
+    else:
+        return
 
     ds = df.to_xarray()
 
     ds = get_mean_toc(ds)
 
     return ds
-
 
 
 def main():
