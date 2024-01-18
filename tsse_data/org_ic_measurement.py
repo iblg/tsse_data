@@ -6,7 +6,7 @@ from tsse_data.calibs import na_calib, cl_calib, linewise_calib
 from tsse_data.general_processing import *
 
 
-def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False, dish_label=False, second_dil=False):
+def create_org_ic_spreadsheet(filepath: str, dims: list, ions: list, spot=False, dish_label=False, second_dilution=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -20,7 +20,8 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False
     spot : bool, default False
     If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
 
-    second_dil :
+    second_dilution : bool, default False
+    If True, puts in columns for you to indicate the amount of sample and DI water in a second dilution step.ß
     """
     if check_willingness('create_org_ic_spreadsheet', filepath):
         if isinstance(dims, tuple):
@@ -37,7 +38,7 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False
         #     print('\nCreating spreadsheet aborted.')
         #     return
 
-        cols = list(dims)
+        cols = dims.copy()
         if spot:
             cols.append('spot')
 
@@ -46,16 +47,14 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False
 
         std_cols = ['m_dish', 'm_with_sample', 'm_with_salt', 'm_with_DI water']
 
-
-
         [cols.append(col_name) for col_name in std_cols]
 
-        if second_dil:
+        if second_dilution:
             cols.append('m_solution_to_ic')
             cols.append('m_di_to_ic')
 
         iions = ions.copy()
-        [cols.append('A_' + ion) for ion in ions]
+        [cols.append('A_' + ion) for ion in iions]
 
         df = pd.DataFrame(columns=cols)
         df.to_excel(filepath, index=False)

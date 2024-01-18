@@ -5,7 +5,7 @@ from tsse_data.calibs import na_calib, cl_calib
 from tsse_data.general_processing import *
 
 
-def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: list, spot: bool = False, second_dilution: bool = False):
+def create_aq_ic_spreadsheet(filepath: tuple, dims: list, ions: list, spot: bool = False, second_dilution: bool = False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -43,7 +43,7 @@ def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: list, spot: boo
         #     print('\nCreating spreadsheet aborted.')
         #     return
 
-        cols = list(dims)
+        cols = dims.copy()
         if spot:
             cols.append('spot')
 

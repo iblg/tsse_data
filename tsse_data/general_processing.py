@@ -1,5 +1,6 @@
 import numpy as np
 import xarray
+from pathlib import Path
 
 
 def adjust_for_molecular_weight(ds: xarray.Dataset,
@@ -67,6 +68,23 @@ def convert_ion_to_salt(ds, salt_conversion):
     return ds
 
 
+def create_measurement_folder(filepath=None, dir_name='measurements'):
+    if filepath:
+        p = Path(filepath).resolve()
+    else:
+        p = Path.cwd().resolve()
+    p = p / dir_name
+
+    try:
+        p.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        print("Folder {} is already there".format(dir_name))
+    else:
+        print("Folder {} was created".format(dir_name))
+
+    return p
+
+
 def average_over_replicates(ds, ions, salt_conversion):
     for ion, calibration in ions.items():
         # average over replicates
@@ -77,6 +95,5 @@ def average_over_replicates(ds, ions, salt_conversion):
             ds = convert_ion_to_salt(ds, salt_conversion)
 
     return ds
-
 
     return

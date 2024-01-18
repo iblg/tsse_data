@@ -4,7 +4,7 @@ from tsse_data.check_spreadsheet import check_spreadsheet, get_idx
 from tsse_data.general_processing import check_willingness
 
 
-def create_kf_spreadsheet(filepath: str, dims: tuple, ep1: bool = False, titer: bool = False):
+def create_kf_spreadsheet(filepath: str, dims: list, ep1: bool = False, titer: bool = False):
     """
     filepath : str
     The filepath to the KF spreadsheet you wish to create.
@@ -19,13 +19,8 @@ def create_kf_spreadsheet(filepath: str, dims: tuple, ep1: bool = False, titer: 
     If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
     """
     if check_willingness('create_kf_spreadsheet', filepath):
-        if isinstance(dims, tuple):
-            pass
-        else:
-            print('\ndims must be a tuple. A {} was passed.'.format(type(dims)))
-            print('\nCreating spreadsheet aborted.')
-            return
-        cols = list(dims)
+
+        cols = dims.copy()
 
         std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
 
