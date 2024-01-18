@@ -4,7 +4,7 @@ from tsse_data.check_spreadsheet import check_spreadsheet, get_idx
 from tsse_data.general_processing import check_willingness
 
 
-def create_kf_spreadsheet(filepath: str, dims: tuple, ep1: bool = False, titer: bool = False):
+def create_kf_spreadsheet(filepath: str, dims: list, m_sample: bool = False, ep1: bool = False, titer: bool = False):
     """
     filepath : str
     The filepath to the KF spreadsheet you wish to create.
@@ -12,22 +12,25 @@ def create_kf_spreadsheet(filepath: str, dims: tuple, ep1: bool = False, titer: 
     dims : list or array
     The list of column names that you wish to pass. These should be the same as the dims of your overall experiment.
 
-    tic : bool, default False.
-    If true, does put in columns for recording total inorganic carbon. If false, omits these columns.
+    m_sample : bool, default False.
+    If true, includes column for recording mass of sample injected into IC. If false, omits this column.
 
-    spot : bool, default False
-    If True, puts in a column for you to indicate the spot on the machine. If false, omits this column.
+    ep1: bool,  default False.
+    If true, includes column for recording EP1 result from the KF titrator.
+
+    titer: bool, default False.
+    If true, includes column for recording titer from the KF titrator.
     """
-    if check_willingness('create_kf_spreadsheet', filepath):
-        if isinstance(dims, tuple):
-            pass
-        else:
-            print('\ndims must be a tuple. A {} was passed.'.format(type(dims)))
-            print('\nCreating spreadsheet aborted.')
-            return
-        cols = list(dims)
 
-        std_cols = ['wt_percent_water', 'm_sample', 'EP1', 'titer']
+
+    if check_willingness('create_kf_spreadsheet', filepath):
+
+        cols = dims.copy()
+
+        std_cols = ['wt_percent_water']
+
+        if m_sample:
+            std_cols.append('m_sample')
 
         if ep1:
             std_cols.append('EP1')
