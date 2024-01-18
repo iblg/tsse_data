@@ -5,7 +5,7 @@ from tsse_data.calibs import na_calib, cl_calib
 from tsse_data.general_processing import *
 
 
-def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: tuple, spot: bool = False, second_dilution: bool = False):
+def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: list, spot: bool = False, second_dilution: bool = False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -36,12 +36,12 @@ def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: tuple, spot: bo
             print('\nCreating spreadsheet aborted.')
             return
         
-        if isinstance(ions, tuple):
-            pass
-        else:
-            print('\nions must be a tuple. A {} was passed.'.format(type(ions)))
-            print('\nCreating spreadsheet aborted.')
-            return
+        # if isinstance(ions, tuple):
+        #     pass
+        # else:
+        #     print('\nions must be a tuple. A {} was passed.'.format(type(ions)))
+        #     print('\nCreating spreadsheet aborted.')
+        #     return
 
         cols = list(dims)
         if spot:
@@ -54,7 +54,8 @@ def create_aq_ic_spreadsheet(filepath: tuple, dims: tuple, ions: tuple, spot: bo
 
         [cols.append(col_name) for col_name in std_cols]
 
-        [cols.append('A_' + ion) for ion in ions]
+        iions = ions.copy()
+        [cols.append('A_' + ion) for ion in iions]
 
         df = pd.DataFrame(columns=cols)
         df.to_excel(filepath, index=False)

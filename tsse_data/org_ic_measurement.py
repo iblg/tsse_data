@@ -6,7 +6,7 @@ from tsse_data.calibs import na_calib, cl_calib, linewise_calib
 from tsse_data.general_processing import *
 
 
-def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: tuple, spot=False, dish_label=False, second_dil=False):
+def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: list, spot=False, dish_label=False, second_dil=False):
     """
     filepath : str
     The filepath to the TOC spreadsheet you wish to create.
@@ -30,12 +30,12 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: tuple, spot=Fals
             print('\nCreating spreadsheet aborted.')
             return
 
-        if isinstance(ions, tuple):
-            pass
-        else:
-            print('\nions must be a tuple. A {} was passed.'.format(type(ions)))
-            print('\nCreating spreadsheet aborted.')
-            return
+        # if isinstance(ions, tuple):
+        #     pass
+        # else:
+        #     print('\nions must be a tuple. A {} was passed.'.format(type(ions)))
+        #     print('\nCreating spreadsheet aborted.')
+        #     return
 
         cols = list(dims)
         if spot:
@@ -52,6 +52,7 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: tuple, spot=Fals
 
         [cols.append(col_name) for col_name in std_cols]
 
+        iions = ions.copy()
         [cols.append('A_' + ion) for ion in ions]
 
         df = pd.DataFrame(columns=cols)
