@@ -54,7 +54,7 @@ def create_org_ic_spreadsheet(filepath: str, dims: tuple, ions: tuple, spot=Fals
 
         [cols.append('A_' + ion) for ion in ions]
 
-        df = pd.DataFrame(columns=dims)
+        df = pd.DataFrame(columns=cols)
         df.to_excel(filepath, index=False)
 
     return
