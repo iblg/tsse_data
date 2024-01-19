@@ -83,7 +83,7 @@ def adjust_for_calibration(toc, calib):
 
 
 def toc_calib(df: pd.DataFrame):
-    ### a general format for a linear log w log a calibration. You can change the break conditions
+    # a general format for a linear log w log a calibration. You can change the break conditions
     # and the slopes as needed
     # filter: perform any filtering needed to determine which calibration function is best
     # to be implemented
@@ -173,7 +173,6 @@ def convert_toc_w_amine(df, amine):
 
 
 def check_amine_arg(amine):
-
     if isinstance(amine, dict):
         pass
     else:
@@ -230,6 +229,7 @@ def process_toc_spreadsheet(filepath: str, dims: list, amine: dict, common_dims:
     df['w_toc_raw'] = df['toc_raw'] / 10 ** 9
     df['dw_toc_raw'] = df['dtoc_raw'] / 10 ** 9
 
+    
     df['w_toc_calibrated'] = adjust_for_calibration(df, toc_calib)
     df['dw_toc_calibrated'] = adjust_for_calibration(df, toc_calib)
 
